@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVT Architecture — Django Interactive Guide</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2c; --panel2:#0e1626; --line:#24344f;
+    --text:#e6edf3; --muted:#8b98ab;
+    --green:#44B78B; --blue:#7aa2f7; --amber:#e0af68; --violet:#bb9af7;
+    --pink:#f7768e; --orange:#ff9e64;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%, #142238 0%, var(--bg) 55%);
+    color:var(--text); line-height:1.6; padding-bottom:80px;
+  }
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.9em}
+
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
+
+  header{padding:56px 0 8px; text-align:center}
+  .kicker{color:var(--green); font-weight:700; letter-spacing:.18em; text-transform:uppercase; font-size:.75rem}
+  h1{font-size:clamp(1.8rem,4vw,2.8rem); margin:.35em 0 .2em; font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--green),var(--blue)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{color:var(--muted); max-width:640px; margin:0 auto}
+  .sub a{color:var(--green); text-decoration:none; border-bottom:1px dotted var(--green)}
+
+  section{margin-top:56px}
+  h2{font-size:1.35rem; margin-bottom:6px}
+  .section-sub{color:var(--muted); font-size:.95rem; margin-bottom:18px}
+
+  /* ---------- diagram ---------- */
+  .controls{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap}
+  button{cursor:pointer; font:inherit}
+  .btn{
+    background:linear-gradient(135deg,var(--green),#2e8f6b); color:#08130e; font-weight:700;
+    border:none; border-radius:10px; padding:10px 18px; transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(68,183,139,.35)}
+  .btn:disabled{opacity:.45; cursor:default; transform:none; box-shadow:none}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--line)}
+  .btn.ghost:hover{color:var(--text); box-shadow:none; border-color:#33507a}
+
+  .diagram-grid{display:grid; grid-template-columns:minmax(280px,1fr) minmax(0,2.2fr); gap:18px}
+  @media(max-width:900px){
+    .diagram-grid{grid-template-columns:1fr}
+    .diagram-col{order:-1}
+  }
+
+  .stage-wrap{border-radius:16px; border:1px solid var(--line); background:var(--panel2); padding:8px}
+  .stage{width:100%}
+  .stage svg{display:block; width:100%; height:auto}
+  .stage svg path{stroke:#2a3b58; stroke-width:3; fill:none; stroke-dasharray:4 7; stroke-linecap:round}
+  .stage svg path.visited{stroke:#3d6b57}
+  .stage svg path.active{stroke:var(--green); stroke-width:4; filter:drop-shadow(0 0 6px rgba(68,183,139,.8))}
+  #dot{opacity:0; transition:opacity .3s; filter:drop-shadow(0 0 8px #fff)}
+
+  svg .node .chip{fill:var(--panel); stroke:var(--line); stroke-width:1.5; transition:all .25s}
+  svg .node .chip-label{fill:var(--muted); font-weight:700; font-size:17px; text-anchor:middle}
+  svg .node .name{fill:#5f6f88; font-size:12px; text-anchor:middle; letter-spacing:.06em}
+  svg .node .inner{transition:transform .25s; transform-box:fill-box; transform-origin:center}
+  svg .node.visited .chip{stroke:#3d6b57}
+  svg .node.visited .chip-label{fill:#9fd4bc}
+  svg .node.visited .name{fill:#7fae9a}
+  svg .node.active .inner{transform:scale(1.12)}
+  svg .node.active .chip{fill:#12241d; stroke:var(--green); filter:drop-shadow(0 0 7px rgba(68,183,139,.55))}
+  svg .node.active .chip-label{fill:#dff5ec}
+  svg .node.active .name{fill:var(--green)}
+
+  svg .node[data-c="browser"].active .chip{stroke:var(--pink); filter:drop-shadow(0 0 7px rgba(247,118,142,.55))}
+  svg .node[data-c="urls"].active .chip{stroke:var(--amber); filter:drop-shadow(0 0 7px rgba(224,175,104,.55))}
+  svg .node[data-c="model"].active .chip{stroke:var(--blue); filter:drop-shadow(0 0 7px rgba(122,162,247,.55))}
+  svg .node[data-c="db"].active .chip{stroke:var(--violet); filter:drop-shadow(0 0 7px rgba(187,154,247,.55))}
+  svg .node[data-c="template"].active .chip{stroke:var(--orange); filter:drop-shadow(0 0 7px rgba(255,158,100,.55))}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; padding:10px 14px; color:var(--muted); font-size:.78rem}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .dotc{width:9px; height:9px; border-radius:50%; display:inline-block}
+
+  .steps{
+    list-style:none; background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:10px; max-height:520px; overflow-y:auto;
+  }
+  .steps li{
+    padding:10px 12px; border-radius:10px; cursor:pointer; transition:background .2s;
+    border:1px solid transparent;
+  }
+  .steps li:hover{background:#16233a}
+  .steps li .t{display:flex; gap:10px; align-items:baseline; font-weight:600; font-size:.9rem}
+  .steps li .n{
+    flex:0 0 auto; width:22px; height:22px; border-radius:50%; background:#1c2b44; color:var(--muted);
+    display:inline-flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700;
+    align-self:center;
+  }
+  .steps li.done .n{background:#1d4435; color:var(--green)}
+  .steps li.done .t{color:#9fd4bc}
+  .steps li.active{background:#12241d; border-color:#2e6b52}
+  .steps li.active .n{background:var(--green); color:#08130e}
+  .steps li .d{display:none; color:var(--muted); font-size:.83rem; margin-top:5px; padding-left:32px}
+  .steps li.active .d{display:block; animation:fadeIn .3s}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(-3px)}to{opacity:1}}
+  .hint{color:var(--muted); font-size:.78rem; padding:8px 12px 2px}
+
+  /* ---------- cards ---------- */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
+  .mvt-card{background:var(--panel); border:1px solid var(--line); border-radius:16px; overflow:hidden}
+  .card-head{
+    width:100%; background:none; border:none; color:var(--text); display:flex; align-items:center; gap:12px;
+    padding:16px 18px; text-align:left;
+  }
+  .card-head:hover{background:#16233a}
+  .badge{
+    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:1.05rem; flex:0 0 auto;
+  }
+  .badge-m{background:rgba(122,162,247,.15); color:var(--blue); border:1px solid rgba(122,162,247,.4)}
+  .badge-v{background:rgba(68,183,139,.15); color:var(--green); border:1px solid rgba(68,183,139,.4)}
+  .badge-t{background:rgba(255,158,100,.15); color:var(--orange); border:1px solid rgba(255,158,100,.4)}
+  .card-title{font-weight:700; flex:1}
+  .card-title code{color:var(--muted); font-size:.75rem; display:block; font-weight:400}
+  .chev{color:var(--muted); transition:transform .3s}
+  .mvt-card.open .chev{transform:rotate(180deg)}
+  .card-body{max-height:0; overflow:hidden; transition:max-height .4s ease}
+  .mvt-card.open .card-body{max-height:420px}
+  .card-body ul{padding:0 18px 18px 18px; list-style:none}
+  .card-body li{padding:6px 0 6px 22px; position:relative; color:#c4d0de; font-size:.92rem}
+  .card-body li::before{content:""; position:absolute; left:0; top:14px; width:8px; height:8px; border-radius:2px}
+  .card-m li::before{background:var(--blue)} .card-v li::before{background:var(--green)} .card-t li::before{background:var(--orange)}
+  .card-body code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.82rem; color:#cfe3ff}
+
+  /* ---------- code tabs ---------- */
+  .tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:0}
+  .tab{
+    background:var(--panel2); color:var(--muted); border:1px solid var(--line); border-bottom:none;
+    border-radius:10px 10px 0 0; padding:9px 16px; font-family:inherit; font-size:.85rem; font-weight:600;
+  }
+  .tab.active{background:var(--panel); color:var(--green); border-color:#2e6b52}
+  .codebox{
+    background:var(--panel); border:1px solid var(--line); border-radius:0 12px 12px 12px; overflow:hidden;
+  }
+  .codebox pre{display:none; padding:18px 20px; overflow-x:auto; font-size:.86rem; line-height:1.7}
+  .codebox pre.active{display:block; animation:fadeIn .3s}
+  .kw{color:#ff7b93} .str{color:#9ece6a} .num{color:#ff9e64} .fn{color:#7aa2f7}
+  .cls{color:#e0af68} .com{color:#565f89; font-style:italic}
+  .dtl{color:#bb9af7; font-weight:600} .ph{color:#e0af68; font-weight:600}
+  .tag{color:#ff7b93} .attr{color:#7dcfff}
+
+  /* ---------- mvc table ---------- */
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:800px){.split{grid-template-columns:1fr}}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px}
+  table{width:100%; border-collapse:collapse; font-size:.9rem}
+  th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line)}
+  th{color:var(--muted); font-size:.75rem; text-transform:uppercase; letter-spacing:.08em}
+  tr:last-child td{border-bottom:none}
+  .panel h3{font-size:1rem; margin-bottom:10px}
+
+  /* ---------- quiz ---------- */
+  .quiz{display:grid; gap:14px}
+  .quiz-q{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px}
+  .quiz-q h3{font-size:.98rem; margin-bottom:12px}
+  .opts{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-size:.88rem; transition:all .2s;
+  }
+  .opt:hover{border-color:#33507a; transform:translateY(-1px)}
+  .quiz-q.answered .opt{cursor:default; opacity:.55}
+  .opt.right{background:#12241d; border-color:var(--green); color:#dff5ec; opacity:1 !important}
+  .opt.wrong{background:#2a1620; border-color:var(--pink); color:#ffd9e0; opacity:1 !important; animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .explain{display:none; margin-top:12px; color:var(--muted); font-size:.86rem; border-left:3px solid var(--green); padding-left:12px}
+  .explain.show{display:block; animation:fadeIn .3s}
+  .score{
+    text-align:center; font-weight:700; color:var(--green); font-size:1.05rem; height:1.4em;
+  }
+
+  footer{margin-top:64px; text-align:center; color:var(--muted); font-size:.82rem}
+  footer a{color:var(--green); text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Django · Tutorial #1</div>
+  <h1>The <span class="grad">MVT Architecture</span></h1>
+  <p class="sub">How a Django request really travels — Model, View, Template.
+  From <a href="https://www.youtube.com/watch?v=3EzKBFc9_MQ" target="_blank">The Net Ninja — Complete Django Tutorial</a>.</p>
+</header>
+
+<section>
+  <h2>Follow a request through the system</h2>
+  <p class="section-sub">Press <b>Simulate request</b> and watch an HTTP request travel through Django — or click any step to jump to it.</p>
+
+  <div class="controls">
+    <button class="btn" id="playBtn">Simulate request</button>
+    <button class="btn" id="stepBtn">Next step (1/9)</button>
+    <button class="btn ghost" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="diagram-grid">
+    <div>
+      <ol class="steps" id="steps">
+        <li><div class="t"><span class="n">1</span>HTTP request</div>
+          <div class="d">The user's browser sends an HTTP request to your Django app — viewing a page, submitting a form, etc.</div></li>
+        <li><div class="t"><span class="n">2</span>URL routing</div>
+          <div class="d">Django matches the URL against patterns in <code>urls.py</code> and forwards the request to the right view function.</div></li>
+        <li><div class="t"><span class="n">3</span>View asks the Model</div>
+          <div class="d">The view needs data, so it calls the Model through Django's ORM — Python objects, not raw SQL.</div></li>
+        <li><div class="t"><span class="n">4</span>Model queries the DB</div>
+          <div class="d">The Model translates the Python call into a database query (default database: SQLite 3).</div></li>
+        <li><div class="t"><span class="n">5</span>Records returned</div>
+          <div class="d">The database returns the rows, and the ORM wraps them up as Python objects.</div></li>
+        <li><div class="t"><span class="n">6</span>Back to the View</div>
+          <div class="d">The Model hands the Python objects back to the view. (Views can also create, update or delete records this way.)</div></li>
+        <li><div class="t"><span class="n">7</span>Context to Template</div>
+          <div class="d">The view passes the prepared data — the <i>context</i> — to an HTML template.</div></li>
+        <li><div class="t"><span class="n">8</span>Rendering (DTL)</div>
+          <div class="d">The template fills its placeholders <code>{{ }}</code> and tags <code>{% %}</code> with data to produce final HTML.</div></li>
+        <li><div class="t"><span class="n">9</span>HTTP response</div>
+          <div class="d">The view returns the rendered HTML as the response. The browser renders the page for the user.</div></li>
+      </ol>
+      <div class="hint">Tip: click a step to replay the animation from that point.</div>
+    </div>
+
+    <div class="diagram-col">
+      <div class="stage-wrap">
+        <div class="stage">
+          <svg viewBox="0 0 1000 500">
+            <defs>
+              <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+                <circle cx="1.5" cy="1.5" r="1.5" fill="#1c2b44"/>
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="1000" height="500" fill="url(#dots)" rx="10"/>
+
+            <path id="p1" d="M 90 240 L 285 240"/>
+            <path id="p2" d="M 285 240 L 500 240"/>
+            <path id="p3" d="M 500 240 C 560 240, 640 110, 720 110"/>
+            <path id="p4" d="M 720 110 L 915 110"/>
+            <path id="p5" d="M 915 110 L 720 110"/>
+            <path id="p6" d="M 720 110 C 640 110, 560 240, 500 240"/>
+            <path id="p7" d="M 500 240 C 560 240, 640 380, 720 380"/>
+            <path id="p8" d="M 720 380 C 640 380, 560 240, 500 240"/>
+            <path id="p9" d="M 500 240 L 90 240"/>
+
+            <g class="node" id="n-browser" data-c="browser" transform="translate(90,240)">
+              <g class="inner">
+                <rect class="chip" x="-72" y="-27" width="144" height="54" rx="10"/>
+                <text class="chip-label" y="-3">browser</text>
+                <text class="name" y="18">User</text>
+              </g>
+            </g>
+            <g class="node" id="n-urls" data-c="urls" transform="translate(285,240)">
+              <g class="inner">
+                <rect class="chip" x="-72" y="-27" width="144" height="54" rx="10"/>
+                <text class="chip-label" y="-3">urls.py</text>
+                <text class="name" y="18">URL dispatcher</text>
+              </g>
+            </g>
+            <g class="node" id="n-view" data-c="view" transform="translate(500,240)">
+              <g class="inner">
+                <rect class="chip" x="-72" y="-27" width="144" height="54" rx="10"/>
+                <text class="chip-label" y="-3">views.py</text>
+                <text class="name" y="18">View</text>
+              </g>
+            </g>
+            <g class="node" id="n-model" data-c="model" transform="translate(720,110)">
+              <g class="inner">
+                <rect class="chip" x="-72" y="-27" width="144" height="54" rx="10"/>
+                <text class="chip-label" y="-3">models.py</text>
+                <text class="name" y="18">Model</text>
+              </g>
+            </g>
+            <g class="node" id="n-db" data-c="db" transform="translate(915,110)">
+              <g class="inner">
+                <rect class="chip" x="-72" y="-27" width="144" height="54" rx="22"/>
+                <text class="chip-label" y="-3">db.sqlite3</text>
+                <text class="name" y="18">Database</text>
+              </g>
+            </g>
+            <g class="node" id="n-template" data-c="template" transform="translate(720,380)">
+              <g class="inner">
+                <rect class="chip" x="-72" y="-27" width="144" height="54" rx="10"/>
+                <text class="chip-label" y="-3">*.html</text>
+                <text class="name" y="18">Template</text>
+              </g>
+            </g>
+
+            <circle id="dot" r="8" fill="#ffffff"/>
+          </svg>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="dotc" style="background:var(--green)"></i> View</span>
+        <span><i class="dotc" style="background:var(--blue)"></i> Model</span>
+        <span><i class="dotc" style="background:var(--orange)"></i> Template</span>
+        <span><i class="dotc" style="background:var(--amber)"></i> URL routing</span>
+        <span><i class="dotc" style="background:var(--violet)"></i> Database (SQLite 3 default)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The three components</h2>
+  <p class="section-sub">MVT separates your application logic into three parts. Click a card to expand.</p>
+  <div class="cards">
+    <div class="mvt-card card-m" id="card-m">
+      <button class="card-head">
+        <span class="badge badge-m">M</span>
+        <span class="card-title">Model<code>models.py</code></span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="card-body"><ul>
+        <li>Represents the <b>data structure</b> of your application — it's essentially your database.</li>
+        <li>Defines the <b>schema</b> of your database tables.</li>
+        <li>Encapsulates the logic for <b>interacting with the database</b>.</li>
+        <li>With the ORM: each model <b>class = a table</b>, each <b>attribute = a column</b>.</li>
+        <li>You query with Python objects — no raw SQL required.</li>
+      </ul></div>
+    </div>
+    <div class="mvt-card card-v" id="card-v">
+      <button class="card-head">
+        <span class="badge badge-v">V</span>
+        <span class="card-title">View<code>views.py</code></span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="card-body"><ul>
+        <li>A Python <b>function or class</b> that receives an HTTP request and returns an HTTP response.</li>
+        <li>Processes incoming requests (view a page, submit a form, etc.).</li>
+        <li>Interacts with the <b>Model</b> to fetch / create / update / delete data.</li>
+        <li>Prepares data and passes it to the <b>Template</b> for rendering.</li>
+        <li>This course uses <b>function-based views</b>.</li>
+      </ul></div>
+    </div>
+    <div class="mvt-card card-t" id="card-t">
+      <button class="card-head">
+        <span class="badge badge-t">T</span>
+        <span class="card-title">Template<code>templates / *.html</code></span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="card-body"><ul>
+        <li>HTML files that contain the <b>structure of your UI</b>.</li>
+        <li>Include <b>placeholders</b> <code>{{ variable }}</code> and <b>template tags</b> <code>{% for %}</code> replaced with dynamic content at render time.</li>
+        <li>Use the <b>Django Template Language (DTL)</b> — very similar to Jinja 2 in Flask.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>See it in code</h2>
+  <p class="section-sub">The inventory app from the course — four small files, one full MVT round-trip.</p>
+  <div class="tabs">
+    <button class="tab active" data-tab="t-urls">urls.py</button>
+    <button class="tab" data-tab="t-models">models.py</button>
+    <button class="tab" data-tab="t-views">views.py</button>
+    <button class="tab" data-tab="t-tpl">products.html</button>
+  </div>
+  <div class="codebox">
+<pre id="t-urls" class="active"><span class="kw">from</span> django.urls <span class="kw">import</span> path
+<span class="kw">from</span> . <span class="kw">import</span> views
+
+urlpatterns = [
+    <span class="fn">path</span>(<span class="str">"products/"</span>, views.products, name=<span class="str">"products"</span>),  <span class="com"># route URL → view</span>
+]</pre>
+<pre id="t-models"><span class="kw">from</span> django.db <span class="kw">import</span> models
+
+<span class="kw">class</span> <span class="cls">Product</span>(models.Model):          <span class="com"># class  = database table</span>
+    name     = models.<span class="fn">CharField</span>(max_length=<span class="num">100</span>)
+    sku      = models.<span class="fn">CharField</span>(max_length=<span class="num">50</span>)
+    price    = models.<span class="fn">DecimalField</span>(max_digits=<span class="num">8</span>, decimal_places=<span class="num">2</span>)
+    quantity = models.<span class="fn">IntegerField</span>()        <span class="com"># field  = table column</span>
+    supplier = models.<span class="fn">CharField</span>(max_length=<span class="num">100</span>)</pre>
+<pre id="t-views"><span class="kw">from</span> django.shortcuts <span class="kw">import</span> render
+<span class="kw">from</span> .models <span class="kw">import</span> <span class="cls">Product</span>
+
+<span class="kw">def</span> <span class="fn">products</span>(request):                    <span class="com"># the View: request in …</span>
+    products = <span class="cls">Product</span>.objects.<span class="fn">all</span>()         <span class="com"># ORM query — no SQL!</span>
+    <span class="kw">return</span> <span class="fn">render</span>(request, <span class="str">"products.html"</span>,
+               {<span class="str">"products"</span>: products})       <span class="com"># context → template … response out</span></pre>
+<pre id="t-tpl"><span class="tag">&lt;h1&gt;</span>Inventory<span class="tag">&lt;/h1&gt;</span>
+<span class="tag">&lt;ul&gt;</span>
+  <span class="dtl">{% for product in products %}</span>              <span class="com">&lt;!-- template tag --&gt;</span>
+    <span class="tag">&lt;li&gt;</span><span class="ph">{{ product.name }}</span> — $<span class="ph">{{ product.price }}</span><span class="tag">&lt;/li&gt;</span>  <span class="com">&lt;!-- placeholder --&gt;</span>
+  <span class="dtl">{% endfor %}</span>
+<span class="tag">&lt;/ul&gt;</span></pre>
+  </div>
+</section>
+
+<section>
+  <h2>Bonus context</h2>
+  <div class="split">
+    <div class="panel">
+      <h3>MVT vs MVC</h3>
+      <table>
+        <tr><th>MVC (classic)</th><th>Django MVT</th></tr>
+        <tr><td>Model</td><td>Model</td></tr>
+        <tr><td>View</td><td><b>Template</b></td></tr>
+        <tr><td>Controller</td><td><b>View</b></td></tr>
+      </table>
+      <p style="color:var(--muted); font-size:.85rem; margin-top:10px">
+        Django's "view" behaves like MVC's controller, and the template is what MVC calls the view.
+        The framework itself (URL dispatcher + machinery) handles the rest of the controlling.
+      </p>
+    </div>
+    <div class="panel">
+      <h3>Why Django at all?</h3>
+      <ul style="padding-left:18px; color:#c4d0de; font-size:.92rem">
+        <li><b>Rapid development</b> — fully-fledged apps fast</li>
+        <li><b>Database flexibility</b> — SQLite 3 default, easy to switch (e.g. PostgreSQL)</li>
+        <li><b>Built-in admin interface</b> — site management simplified</li>
+        <li><b>Extensive ecosystem</b> — a vast package collection</li>
+        <li>"<b>Batteries included</b>" — admin, DB, auth and more out of the box</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Quick check</h2>
+  <p class="section-sub">Three questions — click an answer.</p>
+  <div class="quiz">
+    <div class="quiz-q">
+      <h3>1. A request arrives for <code>/products/</code>. Which component decides which Python function handles it?</h3>
+      <div class="opts">
+        <button class="opt">The Model</button>
+        <button class="opt" data-correct="1">The URL dispatcher (urls.py)</button>
+        <button class="opt">The Template</button>
+      </div>
+      <div class="explain">Django matches the URL against patterns in <code>urls.py</code> and forwards the request to the matching view — step 2 of the flow.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>2. Where is your database schema (tables and columns) defined?</h3>
+      <div class="opts">
+        <button class="opt">In templates</button>
+        <button class="opt">In views.py</button>
+        <button class="opt" data-correct="1">In models.py</button>
+      </div>
+      <div class="explain">The Model defines the schema: each model class is a table, each attribute a column.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>3. What does the ORM let you do?</h3>
+      <div class="opts">
+        <button class="opt">Style pages with Python instead of CSS</button>
+        <button class="opt" data-correct="1">Interact with the database using Python objects instead of raw SQL</button>
+        <button class="opt">Render templates faster</button>
+      </div>
+      <div class="explain">Object-Relational Mapping: <code>Product.objects.all()</code> instead of writing SQL queries by hand.</div>
+    </div>
+  </div>
+  <p class="score" id="score"></p>
+</section>
+
+<footer>
+  Revision notes: <a href="01-introduction.md">01-introduction.md</a> ·
+  Based on <a href="https://www.youtube.com/watch?v=3EzKBFc9_MQ" target="_blank">Django Tutorial #1 — Introduction</a>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  // ---------- diagram animation ----------
+  var pathIds = ['p1','p2','p3','p4','p5','p6','p7','p8','p9'];
+  var paths = pathIds.map(function(id){ return document.getElementById(id); });
+  var dot = document.getElementById('dot');
+  var playBtn = document.getElementById('playBtn');
+  var stepBtn = document.getElementById('stepBtn');
+  var resetBtn = document.getElementById('resetBtn');
+  var stepEls = Array.prototype.slice.call(document.querySelectorAll('#steps li'));
+  var SEG_DUR = 950, PAUSE = 300;
+  var runId = 0;
+
+  var steps = [
+    {from:'n-browser',  to:'n-urls'},
+    {from:'n-urls',     to:'n-view'},
+    {from:'n-view',     to:'n-model'},
+    {from:'n-model',    to:'n-db'},
+    {from:'n-db',       to:'n-model'},
+    {from:'n-model',    to:'n-view'},
+    {from:'n-view',     to:'n-template'},
+    {from:'n-template', to:'n-view'},
+    {from:'n-view',     to:'n-browser'}
+  ];
+
+  function nodeEl(id){ return document.getElementById(id); }
+
+  function setStep(i){
+    document.querySelectorAll('.node').forEach(function(n){
+      n.classList.remove('active','visited');
+    });
+    paths.forEach(function(p){ p.classList.remove('active','visited'); });
+    for(var s=0; s<=i; s++){
+      var cls = (s===i) ? 'active' : 'visited';
+      nodeEl(steps[s].from).classList.add(cls);
+      nodeEl(steps[s].to).classList.add(cls);
+      paths[s].classList.add(cls);
+    }
+    stepEls.forEach(function(li, idx){
+      li.classList.toggle('active', idx===i);
+      li.classList.toggle('done', idx<i);
+    });
+    var active = stepEls[i];
+    if(active && active.scrollIntoView){
+      active.scrollIntoView({block:'nearest', behavior:'smooth'});
+    }
+  }
+
+  function animateSegment(path, myRun){
+    return new Promise(function(resolve){
+      var len = path.getTotalLength();
+      var t0 = performance.now();
+      function frame(now){
+        if(myRun !== runId){ resolve(false); return; }
+        var t = Math.min((now - t0)/SEG_DUR, 1);
+        var e = t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+        var pt = path.getPointAtLength(e*len);
+        dot.setAttribute('cx', pt.x);
+        dot.setAttribute('cy', pt.y);
+        if(t < 1){ requestAnimationFrame(frame); } else { resolve(true); }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  function play(from){
+    var myRun = ++runId;
+    dot.style.opacity = 1;
+    var i = from || 0;
+    curStep = i;
+    updateStepBtn();
+    function next(){
+      if(myRun !== runId) return;
+      if(i >= steps.length){
+        playBtn.textContent = 'Replay';
+        return;
+      }
+      setStep(i);
+      animateSegment(paths[i], myRun).then(function(ok){
+        if(!ok || myRun !== runId) return;
+        i++;
+        curStep = i;
+        updateStepBtn();
+        wait(PAUSE).then(next);
+      });
+    }
+    next();
+  }
+
+  var curStep = 0;
+
+  function updateStepBtn(){
+    if(curStep >= steps.length){
+      stepBtn.disabled = true;
+      stepBtn.textContent = 'Done ✓';
+    } else {
+      stepBtn.disabled = false;
+      stepBtn.textContent = 'Next step (' + (curStep+1) + '/' + steps.length + ')';
+    }
+  }
+
+  function playOne(){
+    if(curStep >= steps.length) return;
+    var myRun = ++runId;
+    var i = curStep;
+    dot.style.opacity = 1;
+    setStep(i);
+    animateSegment(paths[i], myRun).then(function(ok){
+      if(!ok || myRun !== runId) return;
+      curStep = i + 1;
+      updateStepBtn();
+      if(curStep >= steps.length) playBtn.textContent = 'Replay';
+    });
+  }
+
+  function reset(){
+    runId++;
+    curStep = 0;
+    updateStepBtn();
+    dot.style.opacity = 0;
+    document.querySelectorAll('.node').forEach(function(n){
+      n.classList.remove('active','visited');
+    });
+    paths.forEach(function(p){ p.classList.remove('active','visited'); });
+    stepEls.forEach(function(li){ li.classList.remove('active','done'); });
+    playBtn.textContent = 'Simulate request';
+  }
+
+  playBtn.addEventListener('click', function(){ play(0); });
+  stepBtn.addEventListener('click', playOne);
+  resetBtn.addEventListener('click', reset);
+  stepEls.forEach(function(li, idx){
+    li.addEventListener('click', function(){ play(idx); });
+  });
+
+  updateStepBtn();
+
+  // ---------- accordion cards ----------
+  document.querySelectorAll('.mvt-card .card-head').forEach(function(head){
+    head.addEventListener('click', function(){
+      head.parentElement.classList.toggle('open');
+    });
+  });
+
+  // ---------- code tabs ----------
+  var tabs = document.querySelectorAll('.tab');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      tabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      document.querySelectorAll('.codebox pre').forEach(function(p){
+        p.classList.remove('active');
+      });
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- quiz ----------
+  var answered = 0, correct = 0;
+  var scoreEl = document.getElementById('score');
+  document.querySelectorAll('.quiz-q').forEach(function(q){
+    var opts = q.querySelectorAll('.opt');
+    opts.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(q.classList.contains('answered')) return;
+        q.classList.add('answered');
+        var isRight = btn.dataset.correct === '1';
+        btn.classList.add(isRight ? 'right' : 'wrong');
+        if(isRight){ correct++; }
+        else {
+          q.querySelector('.opt[data-correct="1"]').classList.add('right');
+        }
+        q.querySelector('.explain').classList.add('show');
+        answered++;
+        if(answered === 3){
+          scoreEl.textContent = 'You scored ' + correct + ' / 3' +
+            (correct === 3 ? ' — MVT mastered!' : ' — replay the simulation above to review.');
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
