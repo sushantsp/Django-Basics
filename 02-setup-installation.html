@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup & Installation — Django Interactive Guide</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2c; --panel2:#0e1626; --line:#24344f;
+    --text:#e6edf3; --muted:#8b98ab;
+    --green:#44B78B; --blue:#7aa2f7; --amber:#e0af68; --violet:#bb9af7;
+    --pink:#f7768e; --orange:#ff9e64;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%, #142238 0%, var(--bg) 55%);
+    color:var(--text); line-height:1.6; padding-bottom:80px;
+  }
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.9em}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
+
+  header{padding:56px 0 8px; text-align:center}
+  .kicker{color:var(--green); font-weight:700; letter-spacing:.18em; text-transform:uppercase; font-size:.75rem}
+  h1{font-size:clamp(1.8rem,4vw,2.8rem); margin:.35em 0 .2em; font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--green),var(--blue)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{color:var(--muted); max-width:640px; margin:0 auto}
+  .sub a{color:var(--green); text-decoration:none; border-bottom:1px dotted var(--green)}
+
+  section{margin-top:56px}
+  h2{font-size:1.35rem; margin-bottom:6px}
+  .section-sub{color:var(--muted); font-size:.95rem; margin-bottom:18px}
+
+  button{cursor:pointer; font:inherit}
+  .btn{
+    background:linear-gradient(135deg,var(--green),#2e8f6b); color:#08130e; font-weight:700;
+    border:none; border-radius:10px; padding:10px 18px; transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(68,183,139,.35)}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--line)}
+  .btn.ghost:hover{color:var(--text); box-shadow:none; border-color:#33507a}
+  .btn:disabled{opacity:.4; cursor:default; transform:none; box-shadow:none}
+
+  /* ---------- OS toggle ---------- */
+  .os-toggle{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .os-toggle button{
+    background:var(--panel2); color:var(--muted); border:none; padding:8px 16px;
+    font-size:.85rem; font-weight:600;
+  }
+  .os-toggle button.active{background:#12241d; color:var(--green)}
+
+  /* ---------- terminal ---------- */
+  .term{
+    background:#0a0f1a; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,.4);
+  }
+  .term-bar{
+    display:flex; align-items:center; gap:8px; padding:10px 14px;
+    background:var(--panel2); border-bottom:1px solid var(--line);
+  }
+  .tl{width:12px; height:12px; border-radius:50%}
+  .term-title{margin-left:auto; color:var(--muted); font-size:.78rem; font-family:ui-monospace,monospace}
+  .term-body{
+    padding:16px 18px; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    font-size:.9rem; min-height:260px; max-height:420px; overflow-y:auto; line-height:1.75;
+  }
+  .term-body .line{white-space:pre-wrap; word-break:break-word}
+  .prompt{color:var(--green); font-weight:700}
+  .cmd{color:#e6edf3}
+  .out{color:var(--muted)}
+  .out .hi{color:var(--amber)}
+  .cursor{
+    display:inline-block; width:9px; height:17px; background:var(--green);
+    vertical-align:text-bottom; animation:blink 1s step-end infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+  .term-note{
+    margin-top:12px; background:var(--panel); border:1px solid var(--line);
+    border-left:3px solid var(--green); border-radius:10px; padding:12px 16px;
+    color:#c4d0de; font-size:.9rem; min-height:64px;
+  }
+  .term-note b{color:var(--green)}
+  .term-controls{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center}
+  .step-pill{color:var(--muted); font-size:.8rem; font-family:ui-monospace,monospace}
+
+  /* progress dots */
+  .tdots{display:flex; gap:6px; margin-left:auto; align-items:center}
+  .tdot{width:9px; height:9px; border-radius:50%; background:#1c2b44; transition:all .2s}
+  .tdot.done{background:#2e6b52}
+  .tdot.cur{background:var(--green); box-shadow:0 0 8px rgba(68,183,139,.7); transform:scale(1.2)}
+
+  /* ---------- file explorer ---------- */
+  .explorer{display:grid; grid-template-columns:280px 1fr; gap:0; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--panel)}
+  @media(max-width:760px){.explorer{grid-template-columns:1fr}}
+  .tree{border-right:1px solid var(--line); padding:14px 0; background:var(--panel2)}
+  @media(max-width:760px){.tree{border-right:none; border-bottom:1px solid var(--line)}}
+  .tree-item{
+    display:block; width:100%; text-align:left; background:none; border:none; color:var(--muted);
+    padding:8px 18px; font-family:ui-monospace,Menlo,monospace; font-size:.85rem; font-weight:600;
+    border-left:3px solid transparent; transition:all .15s; white-space:nowrap;
+  }
+  .tree-item:hover{color:var(--text); background:#16233a}
+  .tree-item.active{color:var(--green); background:#12241d; border-left-color:var(--green)}
+  .tree-item .ind{opacity:.5; margin-right:6px}
+  .tree-item.folder{color:var(--blue)}
+  .tree-item.folder.active{color:var(--blue); border-left-color:var(--blue); background:#141f3a}
+  .file-detail{padding:22px 26px; min-height:280px}
+  .file-detail h3{font-family:ui-monospace,Menlo,monospace; color:var(--green); font-size:1.05rem; margin-bottom:4px}
+  .file-detail .fd-sub{color:var(--muted); font-size:.85rem; margin-bottom:14px; font-style:italic}
+  .file-detail ul{list-style:none}
+  .file-detail li{padding:5px 0 5px 22px; position:relative; color:#c4d0de; font-size:.92rem}
+  .file-detail li::before{content:"›"; position:absolute; left:2px; color:var(--green); font-weight:700}
+  .file-detail code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.82rem; color:#cfe3ff}
+  .file-detail .fade{animation:fadeIn .3s}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(-3px)}to{opacity:1}}
+
+  /* ---------- settings grid ---------- */
+  .settings-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px}
+  .set-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px;
+    transition:transform .2s, border-color .2s;
+  }
+  .set-card:hover{transform:translateY(-2px); border-color:#33507a}
+  .set-card h4{font-family:ui-monospace,Menlo,monospace; font-size:.88rem; color:var(--amber); margin-bottom:6px}
+  .set-card p{color:var(--muted); font-size:.85rem}
+
+  /* ---------- quiz ---------- */
+  .quiz-q{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:14px}
+  .quiz-q h3{font-size:.98rem; margin-bottom:12px}
+  .opts{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-size:.88rem; transition:all .2s;
+  }
+  .opt:hover{border-color:#33507a; transform:translateY(-1px)}
+  .quiz-q.answered .opt{cursor:default; opacity:.55}
+  .opt.right{background:#12241d; border-color:var(--green); color:#dff5ec; opacity:1 !important}
+  .opt.wrong{background:#2a1620; border-color:var(--pink); color:#ffd9e0; opacity:1 !important; animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .explain{display:none; margin-top:12px; color:var(--muted); font-size:.86rem; border-left:3px solid var(--green); padding-left:12px}
+  .explain.show{display:block; animation:fadeIn .3s}
+  .score{text-align:center; font-weight:700; color:var(--green); font-size:1.05rem; height:1.4em}
+
+  footer{margin-top:64px; text-align:center; color:var(--muted); font-size:.82rem}
+  footer a{color:var(--green); text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Django · Tutorial #2</div>
+  <h1>Setup &amp; <span class="grad">Installation</span></h1>
+  <p class="sub">From a bare machine to a running Django server — pip, virtual environments,
+  project structure and <code>manage.py</code>. From
+  <a href="https://www.youtube.com/watch?v=aAACOgAHg90" target="_blank">The Net Ninja — Complete Django Tutorial</a>.</p>
+</header>
+
+<section>
+  <h2>The setup terminal</h2>
+  <p class="section-sub">Step through the exact commands from the video. Toggle your OS to see the differences (the video uses Windows).</p>
+
+  <div class="term-controls">
+    <button class="btn" id="nextBtn">Next step</button>
+    <button class="btn ghost" id="resetTermBtn">Reset</button>
+    <span class="step-pill" id="stepPill">step 0 / 9</span>
+    <div class="tdots" id="tdots"></div>
+    <div class="os-toggle" style="margin-left:10px">
+      <button class="active" data-os="win">Windows</button>
+      <button data-os="mac">macOS / Linux</button>
+    </div>
+  </div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="tl" style="background:#f7768e"></span>
+      <span class="tl" style="background:#e0af68"></span>
+      <span class="tl" style="background:#44B78B"></span>
+      <span class="term-title">django-course — terminal</span>
+    </div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+  <div class="term-note" id="termNote">Press <b>Next step</b> to begin the setup walkthrough.</div>
+</section>
+
+<section>
+  <h2>Explore the project structure</h2>
+  <p class="section-sub">Created by <code>django-admin startproject myproject</code> and <code>python manage.py startapp myapp</code>. Click any file to see what it does.</p>
+
+  <div class="explorer">
+    <div class="tree">
+      <button class="tree-item folder" data-file="root"><span class="ind">▾</span>myproject/</button>
+      <button class="tree-item" data-file="manage"><span class="ind">└─</span>manage.py</button>
+      <button class="tree-item folder" data-file="inner"><span class="ind">├─</span>myproject/</button>
+      <button class="tree-item" data-file="init"><span class="ind">│&nbsp;&nbsp;└─</span>__init__.py</button>
+      <button class="tree-item" data-file="settings"><span class="ind">│&nbsp;&nbsp;└─</span>settings.py</button>
+      <button class="tree-item" data-file="urls"><span class="ind">│&nbsp;&nbsp;└─</span>urls.py</button>
+      <button class="tree-item" data-file="asgi"><span class="ind">│&nbsp;&nbsp;└─</span>asgi.py</button>
+      <button class="tree-item" data-file="wsgi"><span class="ind">│&nbsp;&nbsp;└─</span>wsgi.py</button>
+      <button class="tree-item folder" data-file="app"><span class="ind">└─</span>myapp/</button>
+    </div>
+    <div class="file-detail" id="fileDetail"></div>
+  </div>
+</section>
+
+<section>
+  <h2>Inside settings.py</h2>
+  <p class="section-sub">The most important file in the project — all configuration lives here.</p>
+  <div class="settings-grid">
+    <div class="set-card"><h4>SECRET_KEY</h4><p>Unique key for your project — <b style="color:var(--pink)">never share it with anyone</b>.</p></div>
+    <div class="set-card"><h4>DEBUG</h4><p>Set to <code style="color:#cfe3ff">True</code> during development. Shows detailed error pages.</p></div>
+    <div class="set-card"><h4>INSTALLED_APPS</h4><p>List where every app you create must be registered.</p></div>
+    <div class="set-card"><h4>MIDDLEWARE</h4><p>Processes incoming HTTP requests and outgoing responses.</p></div>
+    <div class="set-card"><h4>DATABASES</h4><p>SQLite 3 by default — swap the engine for PostgreSQL, SQLAlchemy, MongoDB (NoSQL)… Django is flexible.</p></div>
+    <div class="set-card"><h4>STATIC_URL</h4><p>Location config for static assets — images, CSS, embedded JavaScript.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quick check</h2>
+  <p class="section-sub">Three questions — click an answer.</p>
+  <div class="quiz">
+    <div class="quiz-q">
+      <h3>1. Why create a virtual environment for each Django project?</h3>
+      <div class="opts">
+        <button class="opt">It makes Django run faster</button>
+        <button class="opt" data-correct="1">To isolate the project's dependencies from the global file system</button>
+        <button class="opt">It's required — Django won't install without it</button>
+      </div>
+      <div class="explain">Best practice: each project gets its own isolated dependencies via <code>pipenv shell</code>, avoiding conflicts with globally installed packages.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>2. What does <code>python -m pip install django</code> do?</h3>
+      <div class="opts">
+        <button class="opt">Installs Django globally for all users</button>
+        <button class="opt" data-correct="1">The -m flag runs the pip module as a script, installing that specific Django version</button>
+        <button class="opt">Creates a new Django project</button>
+      </div>
+      <div class="explain"><code>-m</code> tells Python to run a module as the main program — here, pip — grabbing the specific Django version you define.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>3. <code>python manage.py runserver</code> serves your app at…</h3>
+      <div class="opts">
+        <button class="opt" data-correct="1">http://127.0.0.1:8000 — localhost, port 8000</button>
+        <button class="opt">https://django.dev</button>
+        <button class="opt">http://localhost:80</button>
+      </div>
+      <div class="explain">The development server runs on 127.0.0.1 (your local machine) on port 8000, showing the Django welcome page.</div>
+    </div>
+  </div>
+  <p class="score" id="score"></p>
+</section>
+
+<footer>
+  Revision notes: <a href="02-setup-installation.md">02-setup-installation.md</a> ·
+  Based on <a href="https://www.youtube.com/watch?v=aAACOgAHg90" target="_blank">Django Tutorial #2 — Setup &amp; Installation</a>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  // ---------------- terminal walkthrough ----------------
+  var win = {
+    prompt: 'PS C:\\django-course>',
+    steps: [
+      {cmd:'python --version', out:'Python 3.12.3', note:'<b>Verify Python.</b> Download from python.org → Downloads. Straightforward installer — if you have Python, you already have <b>pip</b> too.'},
+      {cmd:'pip --version', out:'pip 24.0 (python 3.12)', note:'<b>Verify pip</b>, the Python package manager. Useful commands: <code>pip install</code>, <code>pip download</code>, <code>pip uninstall</code>, <code>pip freeze</code> (lists installed packages).'},
+      {cmd:'pip install pipenv', out:'Requirement already satisfied: pipenv', note:'<b>Install pipenv</b> — the tool we use to manage virtual environments. Installing Django globally is NOT best practice.'},
+      {cmd:'pipenv shell', out:'Launching subshell in virtual environment.', note:'<b>Activate the virtual environment.</b> Now every package installed here stays isolated inside the project, away from your global file system.'},
+      {cmd:'pipenv install django', out:'Installing django…\nAdded django to Pipfile.', note:'<b>Install Django inside the environment</b> (5.0.4 in the video). Alternatively on Windows: <code>python -m pip install django==5.0.4</code> — the <code>-m</code> flag runs a module as a script.'},
+      {cmd:'pip freeze', out:'django==5.0.4\nsqlparse==0.5.0\ntyping_extensions==4.11.0', note:'<b>Verify the install</b> — pip freeze lists everything installed virtually: Django plus its dependencies (sqlparse, typing extensions).'},
+      {cmd:'django-admin startproject myproject', out:'', note:'<b>Create the project.</b> Django generates the root folder with <code>manage.py</code> and the inner <code>myproject/</code> package — explore the files below!'},
+      {cmd:'python manage.py startapp myapp', out:'', note:'<b>Create an app.</b> Django projects are divided into smaller applications as they grow. manage.py is the wrapper for all admin tasks: startapp, migrations, superusers, tests…'},
+      {cmd:'python manage.py runserver', out:'Starting development server at http://127.0.0.1:8000/\nQuit the server with CTRL-BREAK.', note:'<b>Run it!</b> The dev server starts on <b>localhost (127.0.0.1), port 8000</b> — open it to see the Django welcome page: “The install worked successfully!” 🎉'}
+    ]
+  };
+  var mac = {
+    prompt: 'django-course %',
+    steps: [
+      {cmd:'python3 --version', out:'Python 3.12.3', note:'<b>Verify Python.</b> Download from python.org → Downloads. Straightforward installer — if you have Python, you already have <b>pip</b> too.'},
+      {cmd:'pip3 --version', out:'pip 24.0 (python 3.12)', note:'<b>Verify pip</b>, the Python package manager. Useful commands: <code>pip install</code>, <code>pip download</code>, <code>pip uninstall</code>, <code>pip freeze</code> (lists installed packages).'},
+      {cmd:'pip3 install pipenv', out:'Requirement already satisfied: pipenv', note:'<b>Install pipenv</b> — the tool we use to manage virtual environments. Installing Django globally is NOT best practice.'},
+      {cmd:'pipenv shell', out:'Launching subshell in virtual environment.', note:'<b>Activate the virtual environment.</b> Now every package installed here stays isolated inside the project, away from your global file system.'},
+      {cmd:'pipenv install django', out:'Installing django…\nAdded django to Pipfile.', note:'<b>Install Django inside the environment</b> (5.0.4 in the video). On Linux/Mac the plain <code>pip install django</code> form also works.'},
+      {cmd:'pip freeze', out:'django==5.0.4\nsqlparse==0.5.0\ntyping_extensions==4.11.0', note:'<b>Verify the install</b> — pip freeze lists everything installed virtually: Django plus its dependencies (sqlparse, typing extensions).'},
+      {cmd:'django-admin startproject myproject', out:'', note:'<b>Create the project.</b> Django generates the root folder with <code>manage.py</code> and the inner <code>myproject/</code> package — explore the files below!'},
+      {cmd:'python3 manage.py startapp myapp', out:'', note:'<b>Create an app.</b> Django projects are divided into smaller applications as they grow. manage.py is the wrapper for all admin tasks: startapp, migrations, superusers, tests…'},
+      {cmd:'python3 manage.py runserver', out:'Starting development server at http://127.0.0.1:8000/\nQuit the server with CONTROL-C.', note:'<b>Run it!</b> The dev server starts on <b>localhost (127.0.0.1), port 8000</b> — open it to see the Django welcome page: “The install worked successfully!” 🎉'}
+    ]
+  };
+
+  var os = 'win';
+  var step = 0;
+  var termBody = document.getElementById('termBody');
+  var termNote = document.getElementById('termNote');
+  var nextBtn = document.getElementById('nextBtn');
+  var stepPill = document.getElementById('stepPill');
+  var tdots = document.getElementById('tdots');
+
+  function data(){ return os === 'win' ? win : mac; }
+
+  function renderDots(){
+    tdots.innerHTML = '';
+    for(var i=0; i<data().steps.length; i++){
+      var d = document.createElement('span');
+      d.className = 'tdot' + (i < step ? ' done' : '') + (i === step ? ' cur' : '');
+      tdots.appendChild(d);
+    }
+  }
+
+  function resetTerm(){
+    step = 0;
+    termBody.innerHTML = '';
+    termNote.innerHTML = 'Press <b>Next step</b> to begin the setup walkthrough.';
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Next step';
+    stepPill.textContent = 'step 0 / ' + data().steps.length;
+    renderDots();
+  }
+
+  function typeLine(text, cls, cps){
+    return new Promise(function(resolve){
+      var line = document.createElement('div');
+      line.className = 'line ' + cls;
+      termBody.appendChild(line);
+      var i = 0;
+      function tick(){
+        i += Math.max(1, Math.round(cps/30));
+        line.textContent = text.slice(0, i);
+        termBody.scrollTop = termBody.scrollHeight;
+        if(i < text.length){ setTimeout(tick, 1000/30); }
+        else { resolve(line); }
+      }
+      tick();
+    });
+  }
+
+  function addLine(text, cls){
+    var line = document.createElement('div');
+    line.className = 'line ' + cls;
+    line.textContent = text;
+    termBody.appendChild(line);
+    termBody.scrollTop = termBody.scrollHeight;
+  }
+
+  nextBtn.addEventListener('click', function(){
+    var s = data().steps[step];
+    if(!s) return;
+    addLine(data().prompt + ' ' + s.cmd, 'out');
+    typeLine(s.cmd, 'cmd', 400).then(function(){
+      return new Promise(function(r){ setTimeout(r, 250); });
+    }).then(function(){
+      var typed = termBody.lastChild;
+      typed.textContent = data().prompt + ' ' + s.cmd;
+      typed.className = 'line out';
+      var promptSpan = document.createElement('span');
+      promptSpan.className = 'prompt';
+      promptSpan.textContent = data().prompt + ' ';
+      var cmdSpan = document.createElement('span');
+      cmdSpan.className = 'cmd';
+      cmdSpan.textContent = s.cmd;
+      typed.textContent = '';
+      typed.appendChild(promptSpan);
+      typed.appendChild(cmdSpan);
+      if(s.out){
+        var outLines = s.out.split('\n');
+        return new Promise(function(resolve){
+          (function nextOut(j){
+            if(j >= outLines.length){ resolve(); return; }
+            addLine('  ' + outLines[j], 'out hi');
+            setTimeout(function(){ nextOut(j+1); }, 140);
+          })(0);
+        });
+      }
+    }).then(function(){
+      termNote.innerHTML = s.note;
+      step++;
+      stepPill.textContent = 'step ' + step + ' / ' + data().steps.length;
+      renderDots();
+      if(step >= data().steps.length){
+        nextBtn.disabled = true;
+        nextBtn.textContent = 'Done ✓';
+        var cur = document.createElement('div');
+        cur.className = 'line';
+        cur.innerHTML = '<span class="prompt">' + data().prompt + '</span> <span class="cursor"></span>';
+        termBody.appendChild(cur);
+        termBody.scrollTop = termBody.scrollHeight;
+      }
+    });
+  });
+
+  document.getElementById('resetTermBtn').addEventListener('click', resetTerm);
+
+  document.querySelectorAll('.os-toggle button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.os-toggle button').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      os = b.dataset.os;
+      resetTerm();
+    });
+  });
+
+  resetTerm();
+
+  // ---------------- file explorer ----------------
+  var files = {
+    root:{title:'myproject/', sub:'Root folder — created by django-admin startproject', items:[
+      'Contains the inner <code>myproject/</code> package and <code>manage.py</code>.',
+      'This is where you run all terminal commands (note the prompt in the walkthrough above).',
+      'Open it in VS Code — open the integrated terminal with <b>Ctrl + `</b>.'
+    ]},
+    inner:{title:'myproject/', sub:'Inner package — the project configuration', items:[
+      'The second <code>myproject</code> folder inside the root holds the configuration files.',
+      'Contains: <code>__init__.py</code>, <code>asgi.py</code>, <code>settings.py</code>, <code>urls.py</code>, <code>wsgi.py</code>.'
+    ]},
+    manage:{title:'manage.py', sub:'Command-line utility — wrapper around Django\u2019s admin tasks', items:[
+      'Comes with <b>every</b> Django project.',
+      'Creates applications: <code>python manage.py startapp myapp</code>',
+      'Creates database tables, superusers; runs tests.',
+      'Runs the development server: <code>python manage.py runserver</code>'
+    ]},
+    init:{title:'__init__.py', sub:'Package marker', items:[
+      'Present in each Python package — and it can be empty.',
+      'Its presence indicates the directory should be treated as a <b>Python package</b>.'
+    ]},
+    settings:{title:'settings.py', sub:'Project configuration — the most important file', items:[
+      '<code>SECRET_KEY</code> — don\u2019t share with anyone!',
+      '<code>DEBUG = True</code> — for development.',
+      '<code>INSTALLED_APPS</code> — register apps here as you create them.',
+      '<code>MIDDLEWARE</code> — for incoming HTTP requests and outgoing responses.',
+      '<code>DATABASES</code> — SQLite 3 by default; engine swappable (PostgreSQL, SQLAlchemy, MongoDB…).',
+      '<code>STATIC_URL</code> — for static assets: images, CSS, JavaScript.'
+    ]},
+    urls:{title:'urls.py', sub:'The URL dispatcher', items:[
+      'Maps URLs to <b>view functions or classes</b> — exactly the <code>urls.py</code> step from the MVT architecture.',
+      'The <code>urlpatterns</code> list defines how incoming requests are routed to different parts of your application.',
+      'Grows as you add routes users can visit.'
+    ]},
+    asgi:{title:'asgi.py', sub:'Asynchronous Server Gateway Interface', items:[
+      'Standard interface between <b>asynchronous</b> Python web servers/frameworks and your app.',
+      'A bridge to async features like <b>WebSockets</b> and long-lived connections.',
+      'Lets Django handle <b>realtime interactions</b> — chat apps, live updates — and multiple requests at the same time.'
+    ]},
+    wsgi:{title:'wsgi.py', sub:'Web Server Gateway Interface', items:[
+      'Standard interface between web servers and Python web applications/frameworks.',
+      'Serves as the <b>entry point</b> for WSGI applications.',
+      'The synchronous counterpart of <code>asgi.py</code>.'
+    ]},
+    app:{title:'myapp/', sub:'Application folder — created with startapp', items:[
+      'Created via <code>python manage.py startapp myapp</code>.',
+      'Django\u2019s philosophy: divide a growing project into <b>smaller applications</b>.',
+      'New apps must be registered in <code>INSTALLED_APPS</code> inside <code>settings.py</code>.'
+    ]}
+  };
+
+  var detail = document.getElementById('fileDetail');
+  function showFile(key){
+    var f = files[key];
+    if(!f) return;
+    var html = '<div class="fade"><h3>' + f.title + '</h3><div class="fd-sub">' + f.sub + '</div><ul>';
+    f.items.forEach(function(it){ html += '<li>' + it + '</li>'; });
+    html += '</ul></div>';
+    detail.innerHTML = html;
+    document.querySelectorAll('.tree-item').forEach(function(t){
+      t.classList.toggle('active', t.dataset.file === key);
+    });
+  }
+  document.querySelectorAll('.tree-item').forEach(function(t){
+    t.addEventListener('click', function(){ showFile(t.dataset.file); });
+  });
+  showFile('root');
+
+  // ---------------- quiz ----------------
+  var answered = 0, correct = 0;
+  var scoreEl = document.getElementById('score');
+  document.querySelectorAll('.quiz-q').forEach(function(q){
+    var opts = q.querySelectorAll('.opt');
+    opts.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(q.classList.contains('answered')) return;
+        q.classList.add('answered');
+        var isRight = btn.dataset.correct === '1';
+        btn.classList.add(isRight ? 'right' : 'wrong');
+        if(isRight){ correct++; }
+        else {
+          q.querySelector('.opt[data-correct="1"]').classList.add('right');
+        }
+        q.querySelector('.explain').classList.add('show');
+        answered++;
+        if(answered === 3){
+          scoreEl.textContent = 'You scored ' + correct + ' / 3' +
+            (correct === 3 ? ' — setup mastered!' : ' — replay the terminal above to review.');
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
