@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Django Basics — Interactive Guide</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2c; --panel2:#0e1626; --line:#24344f;
+    --text:#e6edf3; --muted:#8b98ab;
+    --green:#44B78B; --blue:#7aa2f7; --amber:#e0af68; --violet:#bb9af7;
+    --pink:#f7768e; --orange:#ff9e64;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%, #142238 0%, var(--bg) 55%);
+    color:var(--text); line-height:1.6; padding-bottom:80px;
+  }
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.9em}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
+
+  header{padding:56px 0 8px; text-align:center}
+  .kicker{color:var(--green); font-weight:700; letter-spacing:.18em; text-transform:uppercase; font-size:.75rem}
+  h1{font-size:clamp(1.8rem,4vw,2.8rem); margin:.35em 0 .2em; font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--green),var(--blue)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{color:var(--muted); max-width:680px; margin:0 auto}
+  .sub a{color:var(--green); text-decoration:none; border-bottom:1px dotted var(--green)}
+
+  section{margin-top:56px}
+  h2{font-size:1.35rem; margin-bottom:6px}
+  .section-sub{color:var(--muted); font-size:.95rem; margin-bottom:18px}
+
+  button{cursor:pointer; font:inherit}
+  .btn{
+    background:linear-gradient(135deg,var(--green),#2e8f6b); color:#08130e; font-weight:700;
+    border:none; border-radius:10px; padding:10px 18px; transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(68,183,139,.35)}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--line)}
+  .btn.ghost:hover{color:var(--text); box-shadow:none; border-color:#33507a}
+  .btn:disabled{opacity:.45; cursor:default; transform:none; box-shadow:none}
+
+  /* ---------- builder ---------- */
+  .builder{display:grid; grid-template-columns:300px 1fr; gap:16px}
+  @media(max-width:860px){.builder{grid-template-columns:1fr}}
+
+  .bsteps{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px}
+  .prereq{background:var(--panel2); border:1px dashed #33507a; border-radius:16px; padding:14px 16px; margin-bottom:14px}
+  .prereq-title{color:var(--amber); font-size:.8rem; font-weight:700; margin-bottom:8px}
+  .prereq-title a{color:var(--amber)}
+  .p0-toggle{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; vertical-align:middle; margin-left:6px}
+  .p0-btn{background:var(--panel); color:var(--muted); border:none; padding:3px 10px; font-size:.72rem; font-weight:700}
+  .p0-btn.active{background:#2a2210; color:var(--amber)}
+  .p0-pane{display:none !important}
+  .p0-pane.active{display:flex !important}
+  .prereq-note{display:none; color:var(--muted); font-size:.74rem; margin-top:8px}
+  .prereq-note.active{display:block}
+  .prereq-note code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.72rem; color:#cfe3ff}
+  .prereq-cmds{flex-direction:column; align-items:flex-start; gap:6px; margin-top:4px}
+  .prereq-cmds .p0-step{
+    display:flex; align-items:center; gap:10px;
+    background:#0a0f1a; border:1px solid var(--line); border-radius:9px;
+    padding:6px 12px; width:100%;
+  }
+  .p0-n{
+    flex:0 0 auto; width:20px; height:20px; border-radius:50%; background:#2a2210;
+    color:var(--amber); font-size:.7rem; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+  .prereq-cmds code{font-size:.78rem}
+  .p0-desc{color:var(--muted); font-size:.72rem; margin-left:auto; text-align:right}
+  .prereq-cmds code{
+    background:#1c2b44; padding:4px 10px; border-radius:7px; font-size:.78rem; color:#cfe3ff;
+    border:1px solid var(--line);
+  }
+  .bstep{
+    display:flex; gap:10px; align-items:flex-start; padding:11px 12px; border-radius:10px;
+    cursor:pointer; transition:background .2s; border:1px solid transparent; margin-bottom:4px;
+  }
+  .bstep:hover{background:#16233a}
+  .bstep .chk{
+    flex:0 0 auto; width:22px; height:22px; border-radius:6px; border:1px solid var(--line);
+    background:#1c2b44; display:flex; align-items:center; justify-content:center;
+    color:transparent; font-size:.8rem; font-weight:800; margin-top:2px; transition:all .2s;
+  }
+  .bstep.done .chk{background:var(--green); border-color:var(--green); color:#08130e}
+  .bstep.current{background:#12241d; border-color:#2e6b52}
+  .bstep h4{font-size:.9rem; margin-bottom:2px}
+  .bstep p{color:var(--muted); font-size:.8rem}
+  .bstep.current h4{color:#dff5ec}
+  .builder-controls{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center}
+  .progress-txt{color:var(--muted); font-size:.82rem; font-family:ui-monospace,monospace}
+
+  .editor{background:var(--panel2); border:1px solid var(--line); border-radius:16px; overflow:hidden}
+  .file-tabs{display:flex; border-bottom:1px solid var(--line); background:var(--panel); overflow-x:auto}
+  .ftab{
+    padding:10px 16px; font-family:ui-monospace,Menlo,monospace; font-size:.8rem; font-weight:600;
+    color:var(--muted); background:none; border:none; border-bottom:2px solid transparent; white-space:nowrap;
+    display:flex; align-items:center; gap:7px;
+  }
+  .ftab .dot{width:7px; height:7px; border-radius:50%; background:#2a3b58; transition:background .3s}
+  .ftab.lit .dot{background:var(--green); box-shadow:0 0 8px rgba(68,183,139,.8)}
+  .ftab.active{color:var(--green); border-bottom-color:var(--green)}
+  .file-pane{display:none; min-height:270px; position:relative}
+  .file-pane.active{display:block}
+  .file-pane pre{
+    padding:18px 20px; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    font-size:.86rem; line-height:1.75; overflow-x:auto; white-space:pre;
+  }
+  .new-code{background:rgba(68,183,139,.13); border-radius:5px; margin:0 -5px; padding:0 5px; display:inline-block;
+    animation:glowIn .8s}
+  @keyframes glowIn{0%{background:rgba(68,183,139,.5)}100%{background:rgba(68,183,139,.13)}}
+  .kw{color:#ff7b93} .str{color:#9ece6a} .fn{color:#7aa2f7} .com{color:#565f89; font-style:italic}
+  .cls{color:#e0af68} .decorator{color:#bb9af7}
+
+  /* mini browser */
+  .browser{
+    margin-top:14px; background:#0a0f1a; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    transition:border-color .4s;
+  }
+  .browser.ready{border-color:#2e6b52; box-shadow:0 0 24px rgba(68,183,139,.15)}
+  .browser-bar{
+    display:flex; align-items:center; gap:8px; padding:9px 14px; background:var(--panel2);
+    border-bottom:1px solid var(--line);
+  }
+  .bl{width:11px; height:11px; border-radius:50%}
+  .urlbar{
+    flex:1; background:#0a0f1a; border:1px solid var(--line); border-radius:8px; padding:4px 12px;
+    color:var(--muted); font-family:ui-monospace,monospace; font-size:.78rem;
+  }
+  .viewport{
+    padding:26px 22px; min-height:130px; color:var(--muted); font-size:.88rem;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+  }
+  .viewport .h1{font-size:1.5rem; font-weight:800; color:var(--text)}
+  .view-off{opacity:.4}
+  .view-on{animation:fadeIn .6s}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px)}to{opacity:1}}
+
+  /* ---------- files explorer ---------- */
+  .explorer{display:grid; grid-template-columns:280px 1fr; gap:0; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--panel)}
+  @media(max-width:760px){.explorer{grid-template-columns:1fr}}
+  .tree{border-right:1px solid var(--line); padding:14px 0; background:var(--panel2)}
+  @media(max-width:760px){.tree{border-right:none; border-bottom:1px solid var(--line)}}
+  .tree-item{
+    display:block; width:100%; text-align:left; background:none; border:none; color:var(--muted);
+    padding:8px 18px; font-family:ui-monospace,Menlo,monospace; font-size:.85rem; font-weight:600;
+    border-left:3px solid transparent; transition:all .15s; white-space:nowrap;
+  }
+  .tree-item:hover{color:var(--text); background:#16233a}
+  .tree-item.active{color:var(--green); background:#12241d; border-left-color:var(--green)}
+  .tree-item .ind{opacity:.5; margin-right:6px}
+  .tree-item.folder{color:var(--blue)}
+  .tree-item.folder.active{color:var(--blue); border-left-color:var(--blue); background:#141f3a}
+  .file-detail{padding:22px 26px; min-height:260px}
+  .file-detail h3{font-family:ui-monospace,Menlo,monospace; color:var(--green); font-size:1.05rem; margin-bottom:4px}
+  .file-detail .fd-sub{color:var(--muted); font-size:.85rem; margin-bottom:14px; font-style:italic}
+  .file-detail ul{list-style:none}
+  .file-detail li{padding:5px 0 5px 22px; position:relative; color:#c4d0de; font-size:.92rem}
+  .file-detail li::before{content:"›"; position:absolute; left:2px; color:var(--green); font-weight:700}
+  .file-detail code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.82rem; color:#cfe3ff}
+  .file-detail .fade{animation:fadeIn .3s}
+
+  /* ---------- request chain ---------- */
+  .chain{display:flex; align-items:stretch; gap:0; overflow-x:auto; padding:6px 2px}
+  .chain-node{
+    flex:1; min-width:150px; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; position:relative; transition:border-color .25s;
+  }
+  .chain-node.hot{border-color:var(--green)}
+  .chain-arrow{
+    display:flex; align-items:center; padding:0 10px; color:var(--muted); font-size:1.4rem; flex:0 0 auto;
+  }
+  .chain-node h4{font-family:ui-monospace,Menlo,monospace; font-size:.85rem; color:var(--blue); margin-bottom:4px}
+  .chain-node p{color:var(--muted); font-size:.78rem; line-height:1.5}
+  .chain-node .num{
+    position:absolute; top:-10px; left:14px; background:var(--bg); border:1px solid var(--line);
+    border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+    font-size:.72rem; font-weight:700; color:var(--muted);
+  }
+  .chain-node.hot .num{border-color:var(--green); color:var(--green)}
+
+  /* ---------- quiz ---------- */
+  .quiz-q{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:14px}
+  .quiz-q h3{font-size:.98rem; margin-bottom:12px}
+  .opts{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-size:.88rem; transition:all .2s;
+  }
+  .opt:hover{border-color:#33507a; transform:translateY(-1px)}
+  .quiz-q.answered .opt{cursor:default; opacity:.55}
+  .opt.right{background:#12241d; border-color:var(--green); color:#dff5ec; opacity:1 !important}
+  .opt.wrong{background:#2a1620; border-color:var(--pink); color:#ffd9e0; opacity:1 !important; animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .explain{display:none; margin-top:12px; color:var(--muted); font-size:.86rem; border-left:3px solid var(--green); padding-left:12px}
+  .explain.show{display:block; animation:fadeIn .3s}
+  .score{text-align:center; font-weight:700; color:var(--green); font-size:1.05rem; height:1.4em}
+
+  footer{margin-top:64px; text-align:center; color:var(--muted); font-size:.82rem}
+  footer a{color:var(--green); text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Django · Tutorial #3</div>
+  <h1>Django <span class="grad">Basics</span> — wire up your first app</h1>
+  <p class="sub">Project <code>worldtour</code>, app <code>asiatoursagency</code>: register the app, write a view,
+  route URLs at two levels and get the page rendering. From
+  <a href="https://www.youtube.com/watch?v=6Ctsv9VB8L8" target="_blank">The Net Ninja — Complete Django Tutorial</a>.</p>
+</header>
+
+<section>
+  <h2>Build it, step by step</h2>
+  <p class="section-sub">Click through the steps — each one writes real code into the right file. Complete all five and the page goes live in the mini-browser.</p>
+
+  <div class="prereq">
+    <div class="prereq-title">Step 0 — already done ·
+      <span class="p0-toggle">
+        <button class="p0-btn active" data-p0="pipenv">pipenv (video)</button>
+        <button class="p0-btn" data-p0="uv">uv (your setup)</button>
+      </span>
+    </div>
+    <div class="prereq-cmds p0-pane active" data-p0-pane="pipenv">
+      <div class="p0-step"><span class="p0-n">1</span><code>pipenv shell</code><span class="p0-desc">activate the virtual environment</span></div>
+      <div class="p0-step"><span class="p0-n">2</span><code>pipenv install django</code><span class="p0-desc">install Django inside the env</span></div>
+      <div class="p0-step"><span class="p0-n">3</span><code>django-admin startproject worldtour</code><span class="p0-desc">create the project</span></div>
+      <div class="p0-step"><span class="p0-n">4</span><code>cd worldtour</code><span class="p0-desc">enter the project root</span></div>
+    </div>
+    <div class="prereq-cmds p0-pane" data-p0-pane="uv">
+      <div class="p0-step"><span class="p0-n">1</span><code>uv init</code><span class="p0-desc">create pyproject.toml</span></div>
+      <div class="p0-step"><span class="p0-n">2</span><code>uv add django</code><span class="p0-desc">install Django, update pyproject.toml + uv.lock</span></div>
+      <div class="p0-step"><span class="p0-n">3</span><code>uv run django-admin startproject worldtour</code><span class="p0-desc">create the project (no activation needed)</span></div>
+      <div class="p0-step"><span class="p0-n">4</span><code>cd worldtour</code><span class="p0-desc">enter the project root</span></div>
+    </div>
+    <div class="prereq-note" data-note="pipenv">env tracked in <b>Pipfile</b> — autogenerated, don't touch. Run the server with <code>python manage.py runserver</code></div>
+    <div class="prereq-note" data-note="uv">deps tracked in <b>pyproject.toml</b> + <b>uv.lock</b> — same isolation, same project. Run the server with <code>uv run python manage.py runserver</code> (no activation needed)</div>
+  </div>
+
+  <div class="builder-controls">
+    <button class="btn" id="nextStep">Next step (1/5)</button>
+    <button class="btn ghost" id="resetBuild">Reset</button>
+    <span class="progress-txt" id="buildProgress">0 / 5 wired</span>
+  </div>
+
+  <div class="builder">
+    <div>
+      <div class="bsteps" id="bsteps">
+      <div class="bstep" data-step="0"><span class="chk">✓</span><div><h4>Create the app</h4><p>python manage.py startapp asiatoursagency</p></div></div>
+      <div class="bstep" data-step="1"><span class="chk">✓</span><div><h4>Register in INSTALLED_APPS</h4><p>settings.py — the proper way, via apps.py config class</p></div></div>
+      <div class="bstep" data-step="2"><span class="chk">✓</span><div><h4>Write the view</h4><p>views.py — index() returns an HttpResponse</p></div></div>
+      <div class="bstep" data-step="3"><span class="chk">✓</span><div><h4>App-level urls.py</h4><p>Created manually — path('', views.index)</p></div></div>
+      <div class="bstep" data-step="4"><span class="chk">✓</span><div><h4>Include in project urls.py</h4><p>include('asiatoursagency.urls') → run the server!</p></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="editor">
+        <div class="file-tabs">
+          <button class="ftab active" data-pane="f-settings">settings.py <span class="dot"></span></button>
+          <button class="ftab" data-pane="f-views">views.py <span class="dot"></span></button>
+          <button class="ftab" data-pane="f-appurls">asiatoursagency/urls.py <span class="dot"></span></button>
+          <button class="ftab" data-pane="f-projurls">worldtour/urls.py <span class="dot"></span></button>
+        </div>
+
+        <div class="file-pane active" id="f-settings"><pre id="code-settings"></pre></div>
+        <div class="file-pane" id="f-views"><pre id="code-views"></pre></div>
+        <div class="file-pane" id="f-appurls"><pre id="code-appurls"></pre></div>
+        <div class="file-pane" id="f-projurls"><pre id="code-projurls"></pre></div>
+      </div>
+
+      <div class="browser" id="browser">
+        <div class="browser-bar">
+          <span class="bl" style="background:#f7768e"></span>
+          <span class="bl" style="background:#e0af68"></span>
+          <span class="bl" style="background:#44B78B"></span>
+          <span class="urlbar" id="urlbar">http://127.0.0.1:8000</span>
+        </div>
+        <div class="viewport" id="viewport">
+          <span class="view-off">server not wired yet — finish all 5 steps to run it</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The request, chained</h2>
+  <p class="section-sub">Two urls.py files, one view — here's the dispatch chain you just built. Hover a node to trace it.</p>
+  <div class="chain">
+    <div class="chain-node" data-hot><span class="num">1</span><h4>browser</h4><p>GET request to <b>http://127.0.0.1:8000/</b> — route <code>''</code> (homepage)</p></div>
+    <div class="chain-arrow">➜</div>
+    <div class="chain-node" data-hot><span class="num">2</span><h4>worldtour/urls.py</h4><p>project dispatcher: <code>path('', include(...))</code> delegates to the app</p></div>
+    <div class="chain-arrow">➜</div>
+    <div class="chain-node" data-hot><span class="num">3</span><h4>asiatoursagency/urls.py</h4><p>app dispatcher: <code>path('', views.index)</code> triggers the view</p></div>
+    <div class="chain-arrow">➜</div>
+    <div class="chain-node" data-hot><span class="num">4</span><h4>views.py</h4><p><code>index(request)</code> runs → returns <code>HttpResponse('Asian Tours Agency')</code></p></div>
+    <div class="chain-arrow">➜</div>
+    <div class="chain-node" data-hot><span class="num">5</span><h4>browser</h4><p>response rendered — it's a real HTML page, but plain text (templates come later)</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Files in the app folder</h2>
+  <p class="section-sub">What <code>startapp asiatoursagency</code> gives you. Click a file.</p>
+  <div class="explorer">
+    <div class="tree">
+      <button class="tree-item folder" data-file="root"><span class="ind">▾</span>asiatoursagency/</button>
+      <button class="tree-item" data-file="init"><span class="ind">└─</span>__init__.py</button>
+      <button class="tree-item" data-file="admin"><span class="ind">└─</span>admin.py</button>
+      <button class="tree-item" data-file="apps"><span class="ind">└─</span>apps.py</button>
+      <button class="tree-item" data-file="models"><span class="ind">└─</span>models.py</button>
+      <button class="tree-item" data-file="tests"><span class="ind">└─</span>tests.py</button>
+      <button class="tree-item" data-file="views"><span class="ind">└─</span>views.py</button>
+      <button class="tree-item" data-file="urls"><span class="ind">└─</span>urls.py <span style="opacity:.5">(manual)</span></button>
+      <button class="tree-item folder" data-file="migrations"><span class="ind">└─</span>migrations/</button>
+    </div>
+    <div class="file-detail" id="fileDetail"></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quick check</h2>
+  <p class="section-sub">Four questions — click an answer.</p>
+  <div class="quiz">
+    <div class="quiz-q">
+      <h3>1. You created a new app but forgot one required step before the server picks it up. What is it?</h3>
+      <div class="opts">
+        <button class="opt">Create the migrations folder manually</button>
+        <button class="opt" data-correct="1">Add the app to INSTALLED_APPS in settings.py</button>
+        <button class="opt">Rename views.py to match the app name</button>
+      </div>
+      <div class="explain">Every app must be registered in <code>INSTALLED_APPS</code> — either <code>'asiatoursagency'</code> or the proper way <code>'asiatoursagency.apps.AsiatoursagencyConfig'</code>.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>2. Why does the app need its own <code>urls.py</code>?</h3>
+      <div class="opts">
+        <button class="opt">It's auto-generated by startapp</button>
+        <button class="opt" data-correct="1">Each application defines its own urlpatterns, and the project's urls.py pulls them in with include()</button>
+        <button class="opt">To store the database schema</button>
+      </div>
+      <div class="explain">You create it manually per app. The project dispatcher delegates: <code>path('', include('asiatoursagency.urls'))</code> — so more apps = more urls.py files, kept isolated.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>3. In <code>path('', views.index)</code>, what does the empty string mean?</h3>
+      <div class="opts">
+        <button class="opt" data-correct="1">The homepage route (empty route)</button>
+        <button class="opt">No view is attached</button>
+        <button class="opt">A wildcard matching any URL</button>
+      </div>
+      <div class="explain"><code>path()</code> takes two main arguments — route and view. An empty route <code>''</code> is the root/homepage of the application.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>4. If no HTTP method is specified, what kind of request is <code>request</code> by default?</h3>
+      <div class="opts">
+        <button class="opt">POST</button>
+        <button class="opt" data-correct="1">GET — fetch / retrieve data</button>
+        <button class="opt">DELETE</button>
+      </div>
+      <div class="explain">GET, POST, PUT, DELETE are the 4 most common methods; unspecified requests are GETs — used to fetch data and render it on the page.</div>
+    </div>
+  </div>
+  <p class="score" id="score"></p>
+</section>
+
+<footer>
+  Revision notes: <a href="03-django-basics.md">03-django-basics.md</a> ·
+  Based on <a href="https://www.youtube.com/watch?v=6Ctsv9VB8L8" target="_blank">Django Tutorial #3 — Django Basics</a>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  // ---------------- builder ----------------
+  // code templates per step. Each: file, full code (with <span class="new-code"> for the added lines)
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function kw(s){ return '<span class="kw">'+s+'</span>'; }
+
+  var N = '<span class="new-code">';
+
+  var codes = [
+    // step 0 state: nothing added yet
+    {
+      settings: kw('INSTALLED_APPS')+' = [\n  \'django.contrib.admin\',\n  \'django.contrib.auth\',\n  \'django.contrib.contenttypes\',\n  \'django.contrib.sessions\',\n  \'django.contrib.messages\',\n  \'django.contrib.staticfiles\',\n]',
+      views: '<span class="com"># views.py — empty for now</span>\n',
+      appurls: '<span class="com"># asiatoursagency/urls.py — not created yet</span>\n',
+      projurls: kw('from')+' django.contrib '+kw('import')+' admin\n'+kw('from')+' django.urls '+kw('import')+' path\n\n'+kw('urlpatterns')+' = [\n  path(\'admin/\', admin.site.urls),\n]'
+    },
+    // step 1: INSTALLED_APPS
+    {
+      settings: kw('INSTALLED_APPS')+' = [\n  \'django.contrib.admin\',\n  \'django.contrib.auth\',\n  \'django.contrib.contenttypes\',\n  \'django.contrib.sessions\',\n  \'django.contrib.messages\',\n  \'django.contrib.staticfiles\',\n\n  '+N+'\'asiatoursagency.apps.AsiatoursagencyConfig\',</span> '+ '\n]',
+      views: '<span class="com"># views.py — empty for now</span>\n',
+      appurls: '<span class="com"># asiatoursagency/urls.py — not created yet</span>\n',
+      projurls: kw('from')+' django.contrib '+kw('import')+' admin\n'+kw('from')+' django.urls '+kw('import')+' path\n\n'+kw('urlpatterns')+' = [\n  path(\'admin/\', admin.site.urls),\n]'
+    },
+    // step 2: view
+    {
+      settings: kw('INSTALLED_APPS')+' = [\n  \'django.contrib.admin\',\n  \'django.contrib.auth\',\n  \'django.contrib.contenttypes\',\n  \'django.contrib.sessions\',\n  \'django.contrib.messages\',\n  \'django.contrib.staticfiles\',\n\n  \'asiatoursagency.apps.AsiatoursagencyConfig\',\n]',
+      views: kw('from')+' django.http '+kw('import')+' '+N+'HttpResponse</span>\n\n'+kw('def')+' '+N+'index</span>'+N+'(request):</span>\n    '+N+kw('return')+' HttpResponse(</span>\n        '+N+'\'Asian Tours Agency\'</span>\n    '+N+')</span>',
+      appurls: '<span class="com"># asiatoursagency/urls.py — not created yet</span>\n',
+      projurls: kw('from')+' django.contrib '+kw('import')+' admin\n'+kw('from')+' django.urls '+kw('import')+' path\n\n'+kw('urlpatterns')+' = [\n  path(\'admin/\', admin.site.urls),\n]'
+    },
+    // step 3: app urls
+    {
+      settings: kw('INSTALLED_APPS')+' = [\n  \'django.contrib.admin\',\n  \'django.contrib.auth\',\n  \'django.contrib.contenttypes\',\n  \'django.contrib.sessions\',\n  \'django.contrib.messages\',\n  \'django.contrib.staticfiles\',\n\n  \'asiatoursagency.apps.AsiatoursagencyConfig\',\n]',
+      views: kw('from')+' django.http '+kw('import')+' HttpResponse\n\n'+kw('def')+' index(request):\n    '+kw('return')+' HttpResponse(\n        \'Asian Tours Agency\'\n    )',
+      appurls: kw('from')+' django.urls '+kw('import')+' '+N+'path</span>\n'+kw('from')+' . '+kw('import')+' '+N+'views</span>  '+N+'<span class="com"># current directory</span></span>\n\n'+N+kw('urlpatterns')+' = [</span>\n    '+N+'path(\'\', views.index),  '+ '<span class="com">\'\' = homepage route</span></span>\n'+N+']</span>',
+      projurls: kw('from')+' django.contrib '+kw('import')+' admin\n'+kw('from')+' django.urls '+kw('import')+' path\n\n'+kw('urlpatterns')+' = [\n  path(\'admin/\', admin.site.urls),\n]'
+    },
+    // step 4: project urls + server
+    {
+      settings: kw('INSTALLED_APPS')+' = [\n  \'django.contrib.admin\',\n  \'django.contrib.auth\',\n  \'django.contrib.contenttypes\',\n  \'django.contrib.sessions\',\n  \'django.contrib.messages\',\n  \'django.contrib.staticfiles\',\n\n  \'asiatoursagency.apps.AsiatoursagencyConfig\',\n]',
+      views: kw('from')+' django.http '+kw('import')+' HttpResponse\n\n'+kw('def')+' index(request):\n    '+kw('return')+' HttpResponse(\n        \'Asian Tours Agency\'\n    )',
+      appurls: kw('from')+' django.urls '+kw('import')+' path\n'+kw('from')+' . '+kw('import')+' views\n\n'+kw('urlpatterns')+' = [\n    path(\'\', views.index),\n]',
+      projurls: kw('from')+' django.contrib '+kw('import')+' admin\n'+kw('from')+' django.urls '+kw('import')+' path, '+N+'include</span>\n\n'+kw('urlpatterns')+' = [\n  path(\'admin/\', admin.site.urls),\n  '+N+'path(\'\', include(\'asiatoursagency.urls\')),  '+ '<span class="com"># delegate to the app</span></span>\n]'
+    }
+  ];
+
+  var paneFor = {settings:'f-settings', views:'f-views', appurls:'f-appurls', projurls:'f-projurls'};
+  var tabFor  = {settings:null, views:null, appurls:null, projurls:null};
+  document.querySelectorAll('.ftab').forEach(function(t){
+    var pane = t.dataset.pane;
+    if(pane === 'f-settings') tabFor.settings = t;
+    if(pane === 'f-views') tabFor.views = t;
+    if(pane === 'f-appurls') tabFor.appurls = t;
+    if(pane === 'f-projurls') tabFor.projurls = t;
+  });
+
+  var step = 0; // number of completed steps
+  var stepEls = Array.prototype.slice.call(document.querySelectorAll('.bstep'));
+  var nextBtn = document.getElementById('nextStep');
+  var progressEl = document.getElementById('buildProgress');
+  var browser = document.getElementById('browser');
+  var viewport = document.getElementById('viewport');
+
+  var touched = {}; // which files have been modified (for tab dot)
+
+  function render(){
+    var c = codes[step];
+    document.getElementById('code-settings').innerHTML = c.settings;
+    document.getElementById('code-views').innerHTML = c.views;
+    document.getElementById('code-appurls').innerHTML = c.appurls;
+    document.getElementById('code-projurls').innerHTML = c.projurls;
+
+    stepEls.forEach(function(el, i){
+      el.classList.toggle('done', i < step);
+      el.classList.toggle('current', i === step);
+    });
+
+    Object.keys(tabFor).forEach(function(f){
+      if(tabFor[f]) tabFor[f].classList.toggle('lit', !!touched[f]);
+    });
+
+    progressEl.textContent = step + ' / 5 wired';
+    if(step >= 5){
+      nextBtn.disabled = true;
+      nextBtn.textContent = 'Running ✓';
+      browser.classList.add('ready');
+      viewport.innerHTML = '<div class="view-on"><div class="h1">Asian Tours Agency</div><div style="margin-top:6px; color:var(--muted); font-size:.78rem; font-family:ui-monospace,monospace">&lt;html&gt;&lt;body&gt; — a real HTML page, rendered from a string (templates come later)</div></div>';
+    } else {
+      nextBtn.disabled = false;
+      nextBtn.textContent = 'Next step (' + (step+1) + '/5)';
+      browser.classList.remove('ready');
+      viewport.innerHTML = '<span class="view-off">server not wired yet — finish all 5 steps to run it</span>';
+    }
+  }
+
+  function showPane(pane){
+    document.querySelectorAll('.file-pane').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById(pane).classList.add('active');
+    document.querySelectorAll('.ftab').forEach(function(t){ t.classList.toggle('active', t.dataset.pane === pane); });
+  }
+
+  function advance(){
+    if(step >= 5) return;
+    // which file does this step touch?
+    var touches = [null, 'settings', 'views', 'appurls', 'projurls'][step];
+    if(touches){ touched[touches] = true; showPane(paneFor[touches]); }
+    step++;
+    render();
+  }
+
+  nextBtn.addEventListener('click', advance);
+  document.getElementById('resetBuild').addEventListener('click', function(){
+    step = 0; touched = {}; showPane('f-settings'); render();
+  });
+  stepEls.forEach(function(el, i){
+    el.addEventListener('click', function(){
+      // jump to state after step i
+      var touches = [null, 'settings', 'views', 'appurls', 'projurls'];
+      touched = {};
+      for(var s=1; s<=i; s++){ if(touches[s]) touched[touches[s]] = true; }
+      step = i + 1;
+      if(touches[i]) showPane(paneFor[touches[i]]);
+      render();
+    });
+  });
+  document.querySelectorAll('.ftab').forEach(function(t){
+    t.addEventListener('click', function(){ showPane(t.dataset.pane); });
+  });
+
+  render();
+
+  // ---------------- step 0 toggle (pipenv / uv) ----------------
+  document.querySelectorAll('.p0-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      var mode = b.dataset.p0;
+      document.querySelectorAll('.p0-btn').forEach(function(x){ x.classList.toggle('active', x === b); });
+      document.querySelectorAll('.p0-pane').forEach(function(p){
+        p.classList.toggle('active', p.dataset.p0Pane === mode);
+      });
+      document.querySelectorAll('.prereq-note').forEach(function(n){
+        n.classList.toggle('active', n.dataset.note === mode);
+      });
+    });
+  });
+
+  // ---------------- chain hover ----------------
+  document.querySelectorAll('.chain-node').forEach(function(n){
+    n.addEventListener('mouseenter', function(){ n.classList.add('hot'); });
+    n.addEventListener('mouseleave', function(){ n.classList.remove('hot'); });
+  });
+
+  // ---------------- file explorer ----------------
+  var files = {
+    root:{title:'asiatoursagency/', sub:'The application folder — created by python manage.py startapp asiatoursagency', items:[
+      'One project can hold <b>as many apps as you want</b> — Asian tours, African tours, European tours…',
+      'This app handles <b>all operations related to Asian tours</b>.',
+      'Everything below (except urls.py) is generated for you.'
+    ]},
+    init:{title:'__init__.py', sub:'Package marker', items:[
+      'Empty file — Python\u2019s way to treat the directory as a <b>package</b>.',
+      'Lets you import the app\u2019s modules elsewhere in your Django project.',
+      'It\u2019s fine that it\u2019s empty.'
+    ]},
+    admin:{title:'admin.py', sub:'Admin registration', items:[
+      'Register your app\u2019s <b>models</b> with Django\u2019s admin panel.',
+      'Gives a user-friendly interface to interact with the data model directly.',
+      'A whole chapter dedicated to the admin interface comes later in the course.'
+    ]},
+    apps:{title:'apps.py', sub:'Application configuration', items:[
+      'Contains the configuration class — e.g. <code>AsiatoursagencyConfig(AppConfig)</code>.',
+      'The <code>name = \u0027asiatoursagency\u0027</code> attribute matches the folder name exactly.',
+      'Stores app-specific settings; useful for pluggable apps (metadata &amp; configuration hooks).',
+      'Referenced when registering the app the <b>proper way</b>: <code>\u0027asiatoursagency.apps.AsiatoursagencyConfig\u0027</code>.'
+    ]},
+    models:{title:'models.py', sub:'Your database (the M in MVT)', items:[
+      '<b>One of the most important files</b> in the app.',
+      'Each <b>class = a database table</b>; each class <b>attribute = a database field</b>.',
+      'This is essentially where you create your database — covered in the next lesson.'
+    ]},
+    tests:{title:'tests.py', sub:'Unit tests', items:[
+      'For writing <b>unit tests</b> of your application\u2019s functionality.'
+    ]},
+    views:{title:'views.py', sub:'Request–response logic (the V in MVT)', items:[
+      'Functions/classes that <b>receive web requests and return web responses</b>.',
+      'Gets the data needed via <code>models.py</code>, delegates formatting to templates.',
+      'That\u2019s why the MVT diagram runs <b>view → model → template</b>.',
+      'This lesson: <code>def index(request): return HttpResponse(\u0027Asian Tours Agency\u0027)</code>'
+    ]},
+    urls:{title:'urls.py', sub:'App URL dispatcher — created manually!', items:[
+      'Unlike the other files, you create this one <b>by hand</b>.',
+      'Holds <code>urlpatterns</code> — the list of routes available in this app.',
+      'Pulled into the project\u2019s urls.py via <code>include(\u0027asiatoursagency.urls\u0027)</code>.'
+    ]},
+    migrations:{title:'migrations/', sub:'Schema change history', items:[
+      'Contains migration files — how Django <b>stores changes to your models</b> (the DB schema).',
+      'Each file is <b>timestamped</b> and details the changes made to the database.',
+      'Applying migrations: next lesson.'
+    ]}
+  };
+
+  var detail = document.getElementById('fileDetail');
+  function showFile(key){
+    var f = files[key];
+    if(!f) return;
+    var html = '<div class="fade"><h3>' + f.title + '</h3><div class="fd-sub">' + f.sub + '</div><ul>';
+    f.items.forEach(function(it){ html += '<li>' + it + '</li>'; });
+    html += '</ul></div>';
+    detail.innerHTML = html;
+    document.querySelectorAll('.tree-item').forEach(function(t){
+      t.classList.toggle('active', t.dataset.file === key);
+    });
+  }
+  document.querySelectorAll('.tree-item').forEach(function(t){
+    t.addEventListener('click', function(){ showFile(t.dataset.file); });
+  });
+  showFile('root');
+
+  // ---------------- quiz ----------------
+  var total = document.querySelectorAll('.quiz-q').length;
+  var answered = 0, correct = 0;
+  var scoreEl = document.getElementById('score');
+  document.querySelectorAll('.quiz-q').forEach(function(q){
+    var opts = q.querySelectorAll('.opt');
+    opts.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(q.classList.contains('answered')) return;
+        q.classList.add('answered');
+        var isRight = btn.dataset.correct === '1';
+        btn.classList.add(isRight ? 'right' : 'wrong');
+        if(isRight){ correct++; }
+        else {
+          q.querySelector('.opt[data-correct="1"]').classList.add('right');
+        }
+        q.querySelector('.explain').classList.add('show');
+        answered++;
+        if(answered === total){
+          scoreEl.textContent = 'You scored ' + correct + ' / ' + total +
+            (correct === total ? ' — you could wire this app in your sleep!' : ' — review the builder above.');
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
