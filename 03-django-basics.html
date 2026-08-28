@@ -47,6 +47,14 @@
   @media(max-width:860px){.builder{grid-template-columns:1fr}}
 
   .bsteps{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px}
+  .step-exp{
+    background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--green);
+    border-radius:12px; padding:14px 18px; margin-bottom:14px; min-height:86px;
+  }
+  .step-exp-title{color:var(--green); font-weight:700; font-size:.92rem; margin-bottom:5px}
+  .step-exp-body{color:#c4d0de; font-size:.87rem; line-height:1.65}
+  .step-exp-body code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.8rem; color:#cfe3ff}
+  .step-exp-body b{color:var(--text)}
   .prereq{background:var(--panel2); border:1px dashed #33507a; border-radius:16px; padding:14px 16px; margin-bottom:14px}
   .prereq-title{color:var(--amber); font-size:.8rem; font-weight:700; margin-bottom:8px}
   .prereq-title a{color:var(--amber)}
@@ -247,6 +255,11 @@
     <span class="progress-txt" id="buildProgress">0 / 5 wired</span>
   </div>
 
+  <div class="step-exp" id="stepExp">
+    <div class="step-exp-title" id="stepExpTitle">Create the app</div>
+    <div class="step-exp-body" id="stepExpBody"></div>
+  </div>
+
   <div class="builder">
     <div>
       <div class="bsteps" id="bsteps">
@@ -440,8 +453,39 @@
 
   var touched = {}; // which files have been modified (for tab dot)
 
+  var explanations = [
+    {title:'Step 1 — Create the app',
+     body:'Run <code>python manage.py startapp asiatoursagency</code> from the project root. Django generates the whole app skeleton for you: <code>models.py</code>, <code>views.py</code>, <code>admin.py</code>, <code>apps.py</code>, <code>tests.py</code> and a <code>migrations/</code> folder. This app will handle <b>everything related to Asian tours</b> — a project can hold as many apps as you like (African tours, European tours…).'},
+    {title:'Step 2 — Register the app in settings.py',
+     body:'Django doesn\u2019t know your app exists until you list it in <code>INSTALLED_APPS</code>. The proper way is <code>\u0027asiatoursagency.apps.AsiatoursagencyConfig\u0027</code> — pointing at the config class inside <code>apps.py</code> (plain <code>\u0027asiatoursagency\u0027</code> also works). Position in the list doesn\u2019t matter. Without this step, Django ignores the app entirely.'},
+    {title:'Step 3 — Write the view',
+     body:'In <code>views.py</code>, import <code>HttpResponse</code> and define <code>index(request)</code> — the <b>V in MVT</b>. It receives the request (GET, POST, PUT, DELETE… GET is the default) and must return a response. Here we return a plain string for now — the proper way with a <code>templates/</code> folder and the Django Template Language comes in a later lesson.'},
+    {title:'Step 4 — App-level urls.py',
+     body:'Unlike the other files, you create this one <b>manually</b>. Import <code>path</code> and the app\u2019s own <code>views</code> (<code>from . import views</code> — the dot means current directory). Then <code>urlpatterns</code> — the list of every route this app serves. Each entry: <code>path(route, view)</code>. The empty string <code>\u0027\u0027</code> means the <b>homepage</b> of the app, mapped to <code>views.index</code>.'},
+    {title:'Step 5 — Wire into the project urls.py',
+     body:'The project\u2019s <code>urls.py</code> is the <b>entry dispatcher</b>. Import <code>include</code>, then add <code>path(\'\', include(\u0027asiatoursagency.urls\u0027))</code> — it delegates all matching requests to your app\u2019s urlpatterns. This is how the chain forms: <b>project urls → app urls → view → response</b>. Now run <code>python manage.py runserver</code> and open localhost:8000 — your page renders!'}
+  ];
+
+  function renderExp(){
+    var expEl = document.getElementById('stepExp');
+    var titleEl = document.getElementById('stepExpTitle');
+    var bodyEl = document.getElementById('stepExpBody');
+    if(step === 0){
+      titleEl.textContent = 'Ready to build';
+      titleEl.style.color = 'var(--amber)';
+      bodyEl.innerHTML = 'Press <b>Next step</b> — each stage explains what it does and writes the real code into the correct file on the right. Green highlights mark the lines the step adds.';
+      expEl.style.borderLeftColor = 'var(--amber)';
+      return;
+    }
+    var e = explanations[Math.min(step - 1, explanations.length - 1)];
+    titleEl.textContent = e.title;
+    titleEl.style.color = 'var(--green)';
+    bodyEl.innerHTML = e.body;
+    expEl.style.borderLeftColor = 'var(--green)';
+  }
+
   function render(){
-    var c = codes[step];
+    var c = codes[Math.min(step, codes.length - 1)];
     document.getElementById('code-settings').innerHTML = c.settings;
     document.getElementById('code-views').innerHTML = c.views;
     document.getElementById('code-appurls').innerHTML = c.appurls;
@@ -457,6 +501,7 @@
     });
 
     progressEl.textContent = step + ' / 5 wired';
+    renderExp();
     if(step >= 5){
       nextBtn.disabled = true;
       nextBtn.textContent = 'Running ✓';

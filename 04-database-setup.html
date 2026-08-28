@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Database Setup — Django Interactive Guide</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2c; --panel2:#0e1626; --line:#24344f;
+    --text:#e6edf3; --muted:#8b98ab;
+    --green:#44B78B; --blue:#7aa2f7; --amber:#e0af68; --violet:#bb9af7;
+    --pink:#f7768e; --orange:#ff9e64;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%, #142238 0%, var(--bg) 55%);
+    color:var(--text); line-height:1.6; padding-bottom:80px;
+  }
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.9em}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
+
+  header{padding:56px 0 8px; text-align:center}
+  .kicker{color:var(--green); font-weight:700; letter-spacing:.18em; text-transform:uppercase; font-size:.75rem}
+  h1{font-size:clamp(1.8rem,4vw,2.8rem); margin:.35em 0 .2em; font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--green),var(--blue)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{color:var(--muted); max-width:680px; margin:0 auto}
+  .sub a{color:var(--green); text-decoration:none; border-bottom:1px dotted var(--green)}
+
+  section{margin-top:56px}
+  h2{font-size:1.35rem; margin-bottom:6px}
+  .section-sub{color:var(--muted); font-size:.95rem; margin-bottom:18px}
+
+  button{cursor:pointer; font:inherit}
+  .btn{
+    background:linear-gradient(135deg,var(--green),#2e8f6b); color:#08130e; font-weight:700;
+    border:none; border-radius:10px; padding:10px 18px; transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(68,183,139,.35)}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--line)}
+  .btn.ghost:hover{color:var(--text); box-shadow:none; border-color:#33507a}
+  .btn:disabled{opacity:.4; cursor:default; transform:none; box-shadow:none}
+  .btn.blue{background:linear-gradient(135deg,var(--blue),#4d6fd0); color:#0b1220}
+  .btn.blue:hover{box-shadow:0 6px 18px rgba(122,162,247,.35)}
+
+  /* ---------- prereq (step 0) ---------- */
+  .prereq{background:var(--panel2); border:1px dashed #33507a; border-radius:16px; padding:14px 16px; margin-bottom:18px}
+  .prereq-title{color:var(--amber); font-size:.8rem; font-weight:700; margin-bottom:8px}
+  .p0-toggle{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; vertical-align:middle; margin-left:6px}
+  .p0-btn{background:var(--panel); color:var(--muted); border:none; padding:3px 10px; font-size:.72rem; font-weight:700}
+  .p0-btn.active{background:#2a2210; color:var(--amber)}
+  .p0-pane{display:none !important}
+  .p0-pane.active{display:flex !important}
+  .prereq-note{display:none; color:var(--muted); font-size:.74rem; margin-top:8px}
+  .prereq-note.active{display:block}
+  .prereq-note code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.72rem; color:#cfe3ff}
+  .prereq-cmds{flex-direction:column; align-items:flex-start; gap:6px; margin-top:4px}
+  .prereq-cmds .p0-step{
+    display:flex; align-items:center; gap:10px;
+    background:#0a0f1a; border:1px solid var(--line); border-radius:9px;
+    padding:6px 12px; width:100%;
+  }
+  .p0-n{
+    flex:0 0 auto; width:20px; height:20px; border-radius:50%; background:#2a2210;
+    color:var(--amber); font-size:.7rem; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+  .prereq-cmds code{font-size:.78rem}
+  .p0-desc{color:var(--muted); font-size:.72rem; margin-left:auto; text-align:right}
+
+  /* ---------- pipeline ---------- */
+  .pipeline{display:grid; grid-template-columns:1fr 44px 1fr 44px 1fr; gap:0; align-items:stretch; margin-bottom:16px}
+  @media(max-width:860px){.pipeline{grid-template-columns:1fr; gap:10px}}
+  .pipe-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; min-height:190px;
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .pipe-card h4{font-size:.85rem; font-family:ui-monospace,Menlo,monospace; color:var(--blue); margin-bottom:8px}
+  .pipe-card .pc-sub{color:var(--muted); font-size:.72rem; margin-bottom:8px}
+  .pipe-card pre{
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.74rem; line-height:1.6;
+    overflow-x:auto; white-space:pre; color:#c4d0de;
+  }
+  .pipe-card.filled{border-color:#2e6b52}
+  .pipe-card.waiting{opacity:.45}
+  .pipe-arrow{display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:1.5rem}
+  .new-code{background:rgba(68,183,139,.13); border-radius:5px; padding:0 4px; display:inline-block; animation:glowIn .8s}
+  @keyframes glowIn{0%{background:rgba(68,183,139,.5)}100%{background:rgba(68,183,139,.13)}}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(-3px)}to{opacity:1}}
+
+  .dbtable{width:100%; border-collapse:collapse; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.76rem}
+  .dbtable th{
+    background:#1c2b44; color:var(--muted); font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;
+    padding:7px 10px; text-align:left; border:1px solid var(--line);
+  }
+  .dbtable th.auto{color:var(--violet)}
+  .dbtable td{padding:7px 10px; border:1px solid var(--line); color:#c4d0de}
+  .dbtable .rownew td{animation:glowIn 1.2s}
+  .id-note{color:var(--violet); font-size:.7rem; margin-top:6px}
+
+  /* ---------- two commands ---------- */
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:800px){.twocol{grid-template-columns:1fr}}
+  .cmdcard{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px}
+  .cmdcard.make{border-top:3px solid var(--amber)}
+  .cmdcard.mig{border-top:3px solid var(--green)}
+  .cmdcard h3{font-family:ui-monospace,Menlo,monospace; font-size:.95rem; margin-bottom:2px}
+  .cmdcard.make h3{color:var(--amber)}
+  .cmdcard.mig h3{color:var(--green)}
+  .cmdcard .tag{font-size:.78rem; color:var(--muted); font-style:italic; margin-bottom:12px}
+  .cmdcard ul{list-style:none}
+  .cmdcard li{padding:5px 0 5px 22px; position:relative; color:#c4d0de; font-size:.9rem}
+  .cmdcard.make li::before{content:"→"; position:absolute; left:2px; color:var(--amber); font-weight:700}
+  .cmdcard.mig li::before{content:"→"; position:absolute; left:2px; color:var(--green); font-weight:700}
+  .cmdcard code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.8rem; color:#cfe3ff}
+  .warn{
+    margin-top:14px; background:#2a1620; border:1px solid rgba(247,118,142,.4); border-radius:12px;
+    padding:12px 16px; color:#ffd9e0; font-size:.86rem;
+  }
+  .warn b{color:var(--pink)}
+
+  /* ---------- migration file dissect ---------- */
+  .dissect{display:grid; grid-template-columns:1fr 300px; gap:16px}
+  @media(max-width:860px){.dissect{grid-template-columns:1fr}}
+  .codebox{background:var(--panel2); border:1px solid var(--line); border-radius:16px; overflow:hidden}
+  .codebox pre{
+    padding:18px 20px; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    font-size:.82rem; line-height:1.8; overflow-x:auto;
+  }
+  .hl{background:rgba(224,175,104,.14); border-radius:5px; padding:1px 4px; cursor:pointer; transition:background .2s}
+  .hl:hover{background:rgba(224,175,104,.35)}
+  .hl.sel{background:rgba(224,175,104,.4)}
+  .kw{color:#ff7b93} .str{color:#9ece6a} .num{color:#ff9e64} .fn{color:#7aa2f7} .com{color:#565f89; font-style:italic}
+  .cls{color:#e0af68} .bool{color:#bb9af7}
+  .explain-box{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--amber);
+    border-radius:12px; padding:16px 18px; min-height:170px;
+  }
+  .explain-box h4{color:var(--amber); font-size:.88rem; margin-bottom:6px}
+  .explain-box p{color:#c4d0de; font-size:.85rem; line-height:1.65}
+  .explain-box code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.78rem; color:#cfe3ff}
+
+  /* ---------- engine cards ---------- */
+  .settings-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+  .set-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; transition:transform .2s}
+  .set-card:hover{transform:translateY(-2px)}
+  .set-card h4{font-family:ui-monospace,Menlo,monospace; font-size:.85rem; color:var(--amber); margin-bottom:6px}
+  .set-card p{color:var(--muted); font-size:.84rem}
+  .set-card .pill{display:inline-block; font-size:.66rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-bottom:8px}
+  .pill.def{background:#12241d; color:var(--green)}
+  .pill.opt{background:#141f3a; color:var(--blue)}
+
+  /* ---------- quiz ---------- */
+  .quiz-q{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:14px}
+  .quiz-q h3{font-size:.98rem; margin-bottom:12px}
+  .opts{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-size:.88rem; transition:all .2s;
+  }
+  .opt:hover{border-color:#33507a; transform:translateY(-1px)}
+  .quiz-q.answered .opt{cursor:default; opacity:.55}
+  .opt.right{background:#12241d; border-color:var(--green); color:#dff5ec; opacity:1 !important}
+  .opt.wrong{background:#2a1620; border-color:var(--pink); color:#ffd9e0; opacity:1 !important; animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .explain{display:none; margin-top:12px; color:var(--muted); font-size:.86rem; border-left:3px solid var(--green); padding-left:12px}
+  .explain.show{display:block; animation:fadeIn .3s}
+  .score{text-align:center; font-weight:700; color:var(--green); font-size:1.05rem; height:1.4em}
+
+  footer{margin-top:64px; text-align:center; color:var(--muted); font-size:.82rem}
+  footer a{color:var(--green); text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Django · Tutorial #4</div>
+  <h1>Database <span class="grad">Setup</span> — models &amp; migrations</h1>
+  <p class="sub">Define the <code>Tour</code> model, turn it into a schema with <code>makemigrations</code>,
+  apply it with <code>migrate</code>, and understand where the data actually lives. From
+  <a href="https://www.youtube.com/watch?v=DZVFgMSyRXI" target="_blank">The Net Ninja — Complete Django Tutorial</a>.</p>
+</header>
+
+<section>
+  <h2>The pipeline: model → migration → database</h2>
+  <p class="section-sub">Build the model field by field, then run the two migration commands and watch each stage fill up. This is the exact mental model to internalize.</p>
+
+  <div class="prereq">
+    <div class="prereq-title">Step 0 — already done ·
+      <span class="p0-toggle">
+        <button class="p0-btn active" data-p0="pipenv">pipenv (video)</button>
+        <button class="p0-btn" data-p0="uv">uv (your setup)</button>
+      </span>
+    </div>
+    <div class="prereq-cmds p0-pane active" data-p0-pane="pipenv">
+      <div class="p0-step"><span class="p0-n">1</span><code>pipenv shell</code><span class="p0-desc">activate the virtual environment</span></div>
+      <div class="p0-step"><span class="p0-n">2</span><code>pipenv install django</code><span class="p0-desc">install Django inside the env</span></div>
+      <div class="p0-step"><span class="p0-n">3</span><code>django-admin startproject worldtour</code><span class="p0-desc">create the project</span></div>
+      <div class="p0-step"><span class="p0-n">4</span><code>python manage.py startapp asiatoursagency</code><span class="p0-desc">create the app — and register it in INSTALLED_APPS!</span></div>
+    </div>
+    <div class="prereq-cmds p0-pane" data-p0-pane="uv">
+      <div class="p0-step"><span class="p0-n">1</span><code>uv init</code><span class="p0-desc">create pyproject.toml</span></div>
+      <div class="p0-step"><span class="p0-n">2</span><code>uv add django</code><span class="p0-desc">install Django, update pyproject.toml + uv.lock</span></div>
+      <div class="p0-step"><span class="p0-n">3</span><code>uv run django-admin startproject worldtour</code><span class="p0-desc">create the project (no activation needed)</span></div>
+      <div class="p0-step"><span class="p0-n">4</span><code>uv run python manage.py startapp asiatoursagency</code><span class="p0-desc">create the app — and register it in INSTALLED_APPS!</span></div>
+    </div>
+    <div class="prereq-note active" data-note="pipenv">⚠️ Migrations fail silently on unregistered apps — the app must be in <b>INSTALLED_APPS</b> before <code>makemigrations</code>.</div>
+    <div class="prereq-note" data-note="uv">⚠️ Migrations fail silently on unregistered apps — the app must be in <b>INSTALLED_APPS</b> before <code>uv run python manage.py makemigrations</code>.</div>
+  </div>
+
+  <div class="builder-controls" style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap">
+    <button class="btn" id="addFieldBtn">Add field to model</button>
+    <button class="btn blue" id="makeBtn" disabled>python manage.py makemigrations</button>
+    <button class="btn" id="migrateBtn" disabled>python manage.py migrate</button>
+    <button class="btn ghost" id="resetPipe">Reset</button>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-card filled" id="pc-model">
+      <h4>models.py</h4>
+      <div class="pc-sub">the class — blueprint of the table</div>
+      <pre id="modelCode"></pre>
+    </div>
+    <div class="pipe-arrow">➜</div>
+    <div class="pipe-card waiting" id="pc-mig">
+      <h4>migrations/0001_initial.py</h4>
+      <div class="pc-sub">generated by makemigrations</div>
+      <pre id="migCode"><span class="com"># not generated yet</span></pre>
+    </div>
+    <div class="pipe-arrow">➜</div>
+    <div class="pipe-card waiting" id="pc-db">
+      <h4>db.sqlite3 · asiatoursagency_tour</h4>
+      <div class="pc-sub">created by migrate</div>
+      <div id="dbArea"><span class="com" style="font-size:.76rem; font-family:ui-monospace,monospace; color:#565f89">table does not exist yet</span></div>
+    </div>
+  </div>
+  <div class="step-exp" id="pipeExp" style="background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--green); border-radius:12px; padding:14px 18px; font-size:.88rem; color:#c4d0de">
+    Press <b style="color:var(--green)">Add field to model</b> to start defining the Tour model — four fields to go.
+  </div>
+</section>
+
+<section>
+  <h2>The two commands — don't mix them up</h2>
+  <p class="section-sub">The #1 beginner confusion in this lesson. Two commands, two completely different jobs.</p>
+  <div class="twocol">
+    <div class="cmdcard make">
+      <h3>makemigrations</h3>
+      <div class="tag">writes the recipe — does NOT touch the database</div>
+      <ul>
+        <li>Reads <code>models.py</code> and detects what changed (new model, new field, changed type…)</li>
+        <li>Generates a <b>timestamped migration file</b> in <code>migrations/</code> describing the change</li>
+        <li>Pure Python — you can (and should) read the file it produces</li>
+        <li>Run it <b>every time you change a model</b></li>
+      </ul>
+    </div>
+    <div class="cmdcard mig">
+      <h3>migrate</h3>
+      <div class="tag">cooks the dish — executes the recipes against the DB</div>
+      <ul>
+        <li>Applies <b>all pending</b> migration files to the database</li>
+        <li>Also applies Django's built-in tables: <code>admin</code>, <code>auth</code>, <code>contenttypes</code>, <code>sessions</code></li>
+        <li>Actually creates / alters tables in <code>db.sqlite3</code></li>
+        <li>Records which migrations have run, so it never applies one twice</li>
+      </ul>
+    </div>
+  </div>
+  <div class="warn"><b>Why migrations at all?</b> As the app grows, models change constantly. Altering tables by hand (SQL) each time would be a big hassle — migrations are Django's way of <b>propagating model changes into the database schema</b> automatically, with a readable, timestamped history you can even roll back.</div>
+</section>
+
+<section>
+  <h2>Dissect the migration file</h2>
+  <p class="section-sub">What <code>makemigrations</code> actually generated. Click the highlighted parts.</p>
+  <div class="dissect">
+    <div class="codebox"><pre><span class="kw">from</span> django.db <span class="kw">import</span> migrations, models
+
+<span class="kw">class</span> <span class="cls">Migration</span>(migrations.Migration):
+
+    <span class="hl" data-x="initial">initial = <span class="bool">True</span></span>
+
+    <span class="hl" data-x="dep">dependencies = []</span>
+
+    operations = [
+        <span class="hl" data-x="ops">migrations.CreateModel(</span>
+            name=<span class="str">'Tour'</span>,
+            fields=[
+                <span class="hl" data-x="id">(<span class="str">'id'</span>, models.AutoField(...)),</span>
+                (<span class="str">'origin_country'</span>, models.CharField(max_length=<span class="num">64</span>)),
+                (<span class="str">'destination'</span>, models.CharField(max_length=<span class="num">64</span>)),
+                (<span class="str">'number_of_nights'</span>, models.IntegerField()),
+                (<span class="str">'price'</span>, models.IntegerField()),
+            ],
+        ),
+    ]</pre></div>
+    <div class="explain-box" id="migExplain">
+      <h4>Click a highlighted part</h4>
+      <p>Each highlighted token in <code>0001_initial.py</code> tells you something about how Django translates your model into a database schema.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Where the data lives — settings.py &amp; engines</h2>
+  <p class="section-sub">The database is configured in <code>DATABASES</code> inside settings.py. The model code never changes — only the engine does.</p>
+  <div class="settings-grid">
+    <div class="set-card"><span class="pill def">default</span><h4>SQLite 3</h4><p>Single-file DB (<code>db.sqlite3</code> in the project root). Zero setup — perfect for development and learning. Inspect live: <code style="color:#cfe3ff">sqlite3 db.sqlite3 → .tables</code></p></div>
+    <div class="set-card"><span class="pill opt">swappable</span><h4>PostgreSQL</h4><p>Production-grade relational DB — the most common upgrade from SQLite. Same models, different ENGINE setting.</p></div>
+    <div class="set-card"><span class="pill opt">swappable</span><h4>SQLAlchemy</h4><p>Alternative engine — Django's flexibility lets you swap DB layers via settings.</p></div>
+    <div class="set-card"><span class="pill opt">swappable</span><h4>MongoDB</h4><p>Prefer NoSQL? Django can accommodate it — model code stays, settings change. This flexibility is why devs love Django.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quick check</h2>
+  <p class="section-sub">Four questions — click an answer.</p>
+  <div class="quiz">
+    <div class="quiz-q">
+      <h3>1. You added a field to <code>models.py</code>. What's the correct order to get it into the database?</h3>
+      <div class="opts">
+        <button class="opt">migrate → makemigrations</button>
+        <button class="opt" data-correct="1">makemigrations → migrate</button>
+        <button class="opt">Nothing — Django detects changes automatically</button>
+      </div>
+      <div class="explain">First <code>makemigrations</code> generates the recipe file from your model changes, then <code>migrate</code> applies it. Skipping the first step means migrate has nothing new to apply.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>2. What does <code>makemigrations</code> actually do?</h3>
+      <div class="opts">
+        <button class="opt">Creates the table in db.sqlite3</button>
+        <button class="opt" data-correct="1">Generates timestamped Python files describing the model changes</button>
+        <button class="opt">Registers the app in INSTALLED_APPS</button>
+      </div>
+      <div class="explain">It only <b>writes</b> migration files into <code>migrations/</code> — the database is untouched until you run <code>migrate</code>.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>3. Where did the <code>id</code> column come from?</h3>
+      <div class="opts">
+        <button class="opt" data-correct="1">Auto-generated by Django — auto-incremented, unique per record</button>
+        <button class="opt">Declared implicitly by CharField</button>
+        <button class="opt">Added by SQLite 3 only</button>
+      </div>
+      <div class="explain">We never declared it — Django adds an auto-incremented id automatically: first record gets id=1, second id=2, and so on.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>4. After <code>migrate</code>, your table in the database is named…</h3>
+      <div class="opts">
+        <button class="opt">Tour</button>
+        <button class="opt">worldtour.tour</button>
+        <button class="opt" data-correct="1">asiatoursagency_tour — app name + model name</button>
+      </div>
+      <div class="explain">Django namespaces tables by app: <code>&lt;app&gt;_&lt;model&gt;</code>. You'll see this naming in the admin dashboard and when inspecting SQLite directly.</div>
+    </div>
+  </div>
+  <p class="score" id="score"></p>
+</section>
+
+<footer>
+  Revision notes: <a href="04-database-setup.md">04-database-setup.md</a> ·
+  Based on <a href="https://www.youtube.com/watch?v=DZVFgMSyRXI" target="_blank">Django Tutorial #4 — Database Setup</a>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  // ---------- step 0 toggle ----------
+  document.querySelectorAll(".p0-btn").forEach(function(b){
+    b.addEventListener("click", function(){
+      var mode = b.dataset.p0;
+      document.querySelectorAll(".p0-btn").forEach(function(x){ x.classList.toggle("active", x === b); });
+      document.querySelectorAll(".p0-pane").forEach(function(p){
+        p.classList.toggle("active", p.dataset.p0Pane === mode);
+      });
+      document.querySelectorAll(".prereq-note").forEach(function(n){
+        n.classList.toggle("active", n.dataset.note === mode);
+      });
+    });
+  });
+
+  // ---------- pipeline ----------
+  var fields = [
+    {name:"origin_country", type:"models.CharField(max_length=64)", col:"origin_country TEXT(64)"},
+    {name:"destination",    type:"models.CharField(max_length=64)", col:"destination TEXT(64)"},
+    {name:"number_of_nights", type:"models.IntegerField()", col:"number_of_nights INTEGER"},
+    {name:"price",          type:"models.IntegerField()", col:"price INTEGER"}
+  ];
+  var fcount = 0, made = false, migrated = false;
+
+  var addBtn = document.getElementById("addFieldBtn");
+  var makeBtn = document.getElementById("makeBtn");
+  var migBtn = document.getElementById("migrateBtn");
+  var expEl = document.getElementById("pipeExp");
+
+  function kw(s){ return '<span class="kw">'+s+'</span>'; }
+
+  function renderModel(){
+    var html = kw("from") + " django.db " + kw("import") + " models\n\n";
+    html += kw("class") + ' <span class="cls">Tour</span>(models.Model):\n';
+    if(fcount === 0){
+      html += '    <span class="com"># empty — Django encourages you to define models here</span>\n';
+    }
+    for(var i=0; i<fcount; i++){
+      var newest = (i === fcount-1) ? "new-code" : "";
+      html += '    <span class="' + newest + '">' + fields[i].name + " = " + fields[i].type + "</span>\n";
+    }
+    document.getElementById("modelCode").innerHTML = html;
+  }
+
+  function renderMig(){
+    if(!made){
+      document.getElementById("migCode").innerHTML = '<span class="com"># not generated yet</span>';
+      return;
+    }
+    var html = '<span class="com"># migrations/0001_initial.py — autogenerated</span>\n';
+    html += kw("class") + ' <span class="cls">Migration</span>:\n';
+    html += "    initial = <span class='bool'>True</span>\n";
+    html += "    dependencies = []\n";
+    html += "    operations = [\n";
+    html += "        migrations.<span class='fn'>CreateModel</span>(\n";
+    html += "            name=<span class='str'>&#39;Tour&#39;</span>,\n";
+    html += "            fields=[\n";
+    html += "                (<span class='str'>&#39;id&#39;</span>, <span class='new-code'>AutoField — added automatically!</span>),\n";
+    for(var i=0; i<fields.length; i++){
+      html += "                (<span class='str'>&#39;" + fields[i].name + "&#39;</span>, " + fields[i].type.replace("models.", "models.") + "),\n";
+    }
+    html += "            ],\n        ),\n    ]";
+    document.getElementById("migCode").innerHTML = html;
+    document.getElementById("pc-mig").classList.add("filled");
+    document.getElementById("pc-mig").classList.remove("waiting");
+  }
+
+  function renderDb(){
+    var area = document.getElementById("dbArea");
+    if(!migrated){
+      area.innerHTML = '<span style="font-size:.76rem; font-family:ui-monospace,monospace; color:#565f89">table does not exist yet</span>';
+      return;
+    }
+    var html = '<table class="dbtable"><tr>';
+    html += '<th class="auto">id ⚡auto</th>';
+    for(var i=0; i<fields.length; i++){ html += "<th>" + fields[i].name + "</th>"; }
+    html += "</tr>";
+    html += '<tr class="rownew"><td class="auto">1</td><td>Japan</td><td>China</td><td>7</td><td>1500</td></tr>';
+    html += "</table>";
+    html += '<div class="id-note">id never declared — autogenerated &amp; auto-incremented (1, 2, 3…). Table name: <b>app_model</b> → asiatoursagency_tour. Sample row = the tour object from the lesson (Japan → China, 7 nights, $1500).</div>';
+    area.innerHTML = html;
+    document.getElementById("pc-db").classList.add("filled");
+    document.getElementById("pc-db").classList.remove("waiting");
+  }
+
+  function updateState(){
+    addBtn.disabled = fcount >= fields.length;
+    addBtn.textContent = fcount >= fields.length ? "Model complete ✓" : "Add field to model (" + fcount + "/4)";
+    makeBtn.disabled = !(fcount === fields.length && !made);
+    migBtn.disabled = !made || migrated;
+    migBtn.textContent = migrated ? "Migrated ✓" : "python manage.py migrate";
+  }
+
+  function setExp(html){ expEl.innerHTML = html; }
+
+  var fieldNotes = [
+    "<b style='color:var(--green)'>origin_country</b> — a <code>CharField(max_length=64)</code>: text field capped at 64 <b>characters</b>. That cap is an SQL constraint — the DB will reject longer values.",
+    "<b style='color:var(--green)'>destination</b> — also a <code>CharField(max_length=64)</code>. Field types matter: text → CharField, but see what comes next…",
+    "<b style='color:var(--green)'>number_of_nights</b> — an <code>IntegerField()</code>: nights are counted in whole numbers, so no character storage needed.",
+    "<b style='color:var(--green)'>price</b> — <code>IntegerField()</code> again ($1500-style whole prices for now; real apps often use DecimalField for currency). Model complete — the class is the <b>blueprint</b> for the table, and the ORM will do all CRUD for you."
+  ];
+
+  addBtn.addEventListener("click", function(){
+    if(fcount < fields.length){
+      setExp(fieldNotes[fcount]);
+      fcount++;
+      renderModel(); updateState();
+      if(fcount === fields.length){
+        setExp(fieldNotes[3] + "<br><br>Now generate the migration with <b style='color:var(--blue)'>makemigrations</b> →");
+      }
+    }
+  });
+
+  makeBtn.addEventListener("click", function(){
+    made = true;
+    renderMig(); updateState();
+    setExp("<b style='color:var(--blue)'>makemigrations</b> read <code>models.py</code> and generated <code>0001_initial.py</code> — a Python file describing how to create the table. <b>The database is still untouched.</b> Notice the autogenerated <code>id</code> and <code>initial = True</code>. Now apply it with <b style='color:var(--green)'>migrate</b>.");
+  });
+
+  migBtn.addEventListener("click", function(){
+    migrated = true;
+    renderDb(); updateState();
+    setExp("<b style='color:var(--green)'>migrate</b> executed the migration: the <code>asiatoursagency_tour</code> table now exists in <code>db.sqlite3</code> — with the auto <code>id</code> column, all 4 fields, and their constraints. Django also applied its built-in tables (admin, auth, contenttypes, sessions). Next lesson: inserting real records via the Django shell.");
+  });
+
+  document.getElementById("resetPipe").addEventListener("click", function(){
+    fcount = 0; made = false; migrated = false;
+    document.getElementById("pc-mig").classList.add("waiting");
+    document.getElementById("pc-db").classList.add("waiting");
+    document.getElementById("pc-mig").classList.remove("filled");
+    document.getElementById("pc-db").classList.remove("filled");
+    renderModel(); renderMig(); renderDb(); updateState();
+    setExp("Press <b style='color:var(--green)'>Add field to model</b> to start defining the Tour model — four fields to go.");
+  });
+
+  renderModel(); updateState();
+
+  // ---------- migration dissect ----------
+  var explain = {
+    initial: ["initial = True", "Marks this as the <b>initial migration</b> for the app — the first state of its schema. Later migrations set it to False and list what they build upon."],
+    dep: ["dependencies = []", "Empty here because this is the first migration. Future migrations will reference earlier ones (e.g. depends on 0001_initial), forming an ordered chain — that's why files are <b>timestamped</b>."],
+    ops: ["operations = [...]", "The heart of the migration: a <b>list of changes</b> to apply. Here just one — <code>CreateModel</code> for Tour. If you later add a field, a new migration gets an <code>AddField</code> operation instead."],
+    id: ["('id', AutoField)", "The surprise entry — <b>we never declared an id</b>! Django autogenerates it: auto-incremented, unique per record (1, 2, 3…). Every record in your table gets one for free."]
+  };
+  document.querySelectorAll(".hl").forEach(function(h){
+    h.addEventListener("click", function(){
+      document.querySelectorAll(".hl").forEach(function(x){ x.classList.remove("sel"); });
+      h.classList.add("sel");
+      var e = explain[h.dataset.x];
+      document.getElementById("migExplain").innerHTML =
+        "<h4>" + e[0] + "</h4><p>" + e[1] + "</p>";
+    });
+  });
+
+  // ---------- quiz ----------
+  var total = document.querySelectorAll(".quiz-q").length;
+  var answered = 0, correct = 0;
+  var scoreEl = document.getElementById("score");
+  document.querySelectorAll(".quiz-q").forEach(function(q){
+    var opts = q.querySelectorAll(".opt");
+    opts.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if(q.classList.contains("answered")) return;
+        q.classList.add("answered");
+        var isRight = btn.dataset.correct === "1";
+        btn.classList.add(isRight ? "right" : "wrong");
+        if(isRight){ correct++; }
+        else {
+          q.querySelector('.opt[data-correct="1"]').classList.add("right");
+        }
+        q.querySelector(".explain").classList.add("show");
+        answered++;
+        if(answered === total){
+          scoreEl.textContent = "You scored " + correct + " / " + total +
+            (correct === total ? " — migrations mastered!" : " — replay the pipeline above to review.");
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

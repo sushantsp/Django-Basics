@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adding Database Records — Django Interactive Guide</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2c; --panel2:#0e1626; --line:#24344f;
+    --text:#e6edf3; --muted:#8b98ab;
+    --green:#44B78B; --blue:#7aa2f7; --amber:#e0af68; --violet:#bb9af7;
+    --pink:#f7768e; --orange:#ff9e64;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%, #142238 0%, var(--bg) 55%);
+    color:var(--text); line-height:1.6; padding-bottom:80px;
+  }
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.9em}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
+
+  header{padding:56px 0 8px; text-align:center}
+  .kicker{color:var(--green); font-weight:700; letter-spacing:.18em; text-transform:uppercase; font-size:.75rem}
+  h1{font-size:clamp(1.8rem,4vw,2.8rem); margin:.35em 0 .2em; font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--green),var(--blue)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .sub{color:var(--muted); max-width:680px; margin:0 auto}
+  .sub a{color:var(--green); text-decoration:none; border-bottom:1px dotted var(--green)}
+
+  section{margin-top:56px}
+  h2{font-size:1.35rem; margin-bottom:6px}
+  .section-sub{color:var(--muted); font-size:.95rem; margin-bottom:18px}
+
+  button{cursor:pointer; font:inherit}
+  .btn{
+    background:linear-gradient(135deg,var(--green),#2e8f6b); color:#08130e; font-weight:700;
+    border:none; border-radius:10px; padding:10px 18px; transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(68,183,139,.35)}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--line)}
+  .btn.ghost:hover{color:var(--text); box-shadow:none; border-color:#33507a}
+  .btn:disabled{opacity:.4; cursor:default; transform:none; box-shadow:none}
+
+  /* ---------- IPython cards ---------- */
+  .features{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px}
+  .feat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; transition:transform .2s}
+  .feat:hover{transform:translateY(-2px)}
+  .feat h4{font-size:.9rem; color:var(--violet); margin-bottom:6px}
+  .feat p{color:var(--muted); font-size:.84rem}
+  .feat code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.78rem; color:#cfe3ff}
+  .vs{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px}
+  @media(max-width:800px){.vs{grid-template-columns:1fr}}
+  .vcard{background:#0a0f1a; border:1px solid var(--line); border-radius:14px; overflow:hidden}
+  .vcard .vh{padding:9px 14px; font-family:ui-monospace,Menlo,monospace; font-size:.8rem; font-weight:700; border-bottom:1px solid var(--line)}
+  .vcard .vh.plain{color:var(--muted); background:var(--panel2)}
+  .vcard .vh.enh{color:var(--green); background:#12241d}
+  .vcard pre{padding:14px 16px; font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:.8rem; line-height:1.7; overflow-x:auto; color:#c4d0de}
+  .vcard .in{color:var(--green); font-weight:700}
+  .vcard .out{color:var(--muted)}
+
+  /* ---------- shell simulator ---------- */
+  .sim-grid{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr); gap:16px}
+  @media(max-width:900px){.sim-grid{grid-template-columns:1fr}}
+  .term{
+    background:#0a0f1a; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,.4); display:flex; flex-direction:column;
+  }
+  .term-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--panel2); border-bottom:1px solid var(--line)}
+  .tl{width:12px; height:12px; border-radius:50%}
+  .term-title{margin-left:auto; color:var(--muted); font-size:.78rem; font-family:ui-monospace,monospace}
+  .term-body{
+    padding:16px 18px; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    font-size:.84rem; min-height:340px; max-height:460px; overflow-y:auto; line-height:1.8;
+  }
+  .line{white-space:pre-wrap; word-break:break-word}
+  .in-p{color:var(--green); font-weight:700}
+  .out-p{color:var(--violet); font-weight:700}
+  .cmd-t{color:#e6edf3}
+  .out-t{color:var(--muted)}
+  .out-t .ok{color:var(--amber)}
+  .cursor{display:inline-block; width:8px; height:15px; background:var(--green); vertical-align:text-bottom; animation:blink 1s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .sidepanel{display:flex; flex-direction:column; gap:12px}
+  .sugg{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px}
+  .sugg h4{font-size:.82rem; color:var(--amber); margin-bottom:10px}
+  .sbtn{
+    display:block; width:100%; text-align:left; background:var(--panel2); color:var(--text);
+    border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-family:ui-monospace,Menlo,monospace;
+    font-size:.76rem; margin-bottom:8px; transition:all .15s;
+  }
+  .sbtn:hover{border-color:var(--green); background:#12241d}
+  .sbtn:disabled{opacity:.35; cursor:default}
+  .sbtn .hint{color:var(--muted); font-size:.68rem; display:block; font-family:-apple-system,sans-serif}
+  .lesson-box{
+    background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--green);
+    border-radius:12px; padding:13px 16px; font-size:.84rem; color:#c4d0de; min-height:90px;
+  }
+  .lesson-box b{color:var(--green)}
+  .lesson-box code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.76rem; color:#cfe3ff}
+
+  /* ---------- db live view ---------- */
+  .dbwrap{border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:14px}
+  .dbwrap .dbh{padding:9px 14px; background:var(--panel2); border-bottom:1px solid var(--line); font-family:ui-monospace,Menlo,monospace; font-size:.78rem; color:var(--violet)}
+  .dbtable{width:100%; border-collapse:collapse; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.78rem}
+  .dbtable th{background:#1c2b44; color:var(--muted); font-size:.66rem; text-transform:uppercase; letter-spacing:.06em; padding:7px 10px; text-align:left; border:1px solid var(--line)}
+  .dbtable th.auto{color:var(--violet)}
+  .dbtable td{padding:7px 10px; border:1px solid var(--line); color:#c4d0de}
+  .dbtable tr.newrow td{animation:glowIn 1.2s}
+  .pending{color:var(--pink); font-size:.72rem}
+  @keyframes glowIn{0%{background:rgba(68,183,139,.5)}100%{background:transparent}}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(-3px)}to{opacity:1}}
+
+  /* ---------- state table ---------- */
+  .state-tbl{width:100%; border-collapse:collapse; font-size:.9rem}
+  .state-tbl th, td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line)}
+  .state-tbl th{color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em}
+  .state-tbl td{color:#c4d0de}
+  .state-tbl code{background:#1c2b44; padding:1px 6px; border-radius:5px; font-size:.8rem; color:#cfe3ff}
+  .y{color:var(--green); font-weight:700} .n{color:var(--pink); font-weight:700}
+
+  /* ---------- quiz ---------- */
+  .quiz-q{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:14px}
+  .quiz-q h3{font-size:.98rem; margin-bottom:12px}
+  .opts{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-size:.88rem; transition:all .2s;
+  }
+  .opt:hover{border-color:#33507a; transform:translateY(-1px)}
+  .quiz-q.answered .opt{cursor:default; opacity:.55}
+  .opt.right{background:#12241d; border-color:var(--green); color:#dff5ec; opacity:1 !important}
+  .opt.wrong{background:#2a1620; border-color:var(--pink); color:#ffd9e0; opacity:1 !important; animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .explain{display:none; margin-top:12px; color:var(--muted); font-size:.86rem; border-left:3px solid var(--green); padding-left:12px}
+  .explain.show{display:block; animation:fadeIn .3s}
+  .score{text-align:center; font-weight:700; color:var(--green); font-size:1.05rem; height:1.4em}
+
+  footer{margin-top:64px; text-align:center; color:var(--muted); font-size:.82rem}
+  footer a{color:var(--green); text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Django · Tutorial #5</div>
+  <h1>Adding <span class="grad">Database Records</span></h1>
+  <p class="sub">IPython, the Django shell, instantiating objects, the <code>__str__</code> method, and the crucial difference between <i>creating</i> and <i>saving</i>. From
+  <a href="https://www.youtube.com/watch?v=qQPKqClSDbg" target="_blank">The Net Ninja — Complete Django Tutorial</a>.</p>
+</header>
+
+<section>
+  <h2>First, meet IPython</h2>
+  <p class="section-sub">The Django shell runs on IPython — the "enhanced" interactive Python. Compare the two:</p>
+  <div class="vs">
+    <div class="vcard">
+      <div class="vh plain">python — the normal interpreter</div>
+      <pre><span class="in">&gt;&gt;&gt;</span> 1 + 1
+<span class="out">2</span>
+<span class="in">&gt;&gt;&gt;</span> 3 / 2
+<span class="out">1.5</span></pre>
+    </div>
+    <div class="vcard">
+      <div class="vh enh">ipython — enhanced interactive Python</div>
+      <pre><span class="in">In [1]:</span> 1 + 1
+<span class="out-p">Out[1]:</span> <span class="out-t">2</span>
+<span class="in">In [2]:</span> <span class="ok">%time sum(range(10_000_000))</span>
+<span class="out-t">CPU times: total 0, 2 ms</span>
+<span class="out-p">Out[2]:</span> <span class="out-t">49999995000000</span></pre>
+    </div>
+  </div>
+  <div class="features">
+    <div class="feat"><h4>Numbered prompts</h4><p><code>In [1]:</code> asks for input, <code>Out[1]:</code> shows output — a running history of the session.</p></div>
+    <div class="feat"><h4>Tab completion</h4><p>Type <code>def</code> + <code>(</code> + <b>Tab</b> → see available classes, methods and attributes. It helps you write code faster.</p></div>
+    <div class="feat"><h4>Shell commands</h4><p><code>ls</code> works right inside (Unix command). <code>dir</code> doesn't — IPython tells you it's a function.</p></div>
+    <div class="feat"><h4>Other languages</h4><p>You can run Java, JavaScript, even SQL snippets within the session.</p></div>
+    <div class="feat"><h4>Magic functions</h4><p>Special commands starting with <code>%</code> — features not in standard Python. Exit with <b>Ctrl + D</b>. More at ipython.org.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>The Django shell — your database playground</h2>
+  <p class="section-sub">Type the commands or click the suggestion buttons. <code>python manage.py shell</code> = IPython, but tied to your Django app — models preloaded, DB ready. Watch the live table on the right.</p>
+
+  <div class="sim-grid">
+    <div class="term">
+      <div class="term-bar">
+        <span class="tl" style="background:#f7768e"></span>
+        <span class="tl" style="background:#e0af68"></span>
+        <span class="tl" style="background:#44B78B"></span>
+        <span class="term-title">worldtour — python manage.py shell</span>
+      </div>
+      <div class="term-body" id="termBody">
+        <div class="line"><span class="out-t">Python 3.12.3 (IPython 8.24) — Django 5.0.4</span></div>
+        <div class="line"><span class="out-t">Type your commands below, or use the buttons on the right.</span></div>
+      </div>
+    </div>
+
+    <div class="sidepanel">
+      <div class="sugg">
+        <h4>Suggested commands</h4>
+        <button class="sbtn" data-cmd="import">from asiatoursagency.models import Tour <span class="hint">load the model into the session</span></button>
+        <button class="sbtn" data-cmd="t1">t1 = Tour(origin_country='Japan', destination='China', number_of_nights=10, price=1500) <span class="hint">instantiate — create, not save!</span></button>
+        <button class="sbtn" data-cmd="show1">t1 <span class="hint">display the object</span></button>
+        <button class="sbtn" data-cmd="str">exit() → add __str__ to Tour → restart shell <span class="hint">the fix for "Tour object"</span></button>
+        <button class="sbtn" data-cmd="save1">t1.save() <span class="hint">the COMMIT — write to the database</span></button>
+        <button class="sbtn" data-cmd="t2">t2 = Tour(origin_country='Vietnam', destination='South Korea', number_of_nights=15, price=20500) <span class="hint">second tour — leave it unsaved</span></button>
+        <button class="sbtn" data-cmd="show2">t2 <span class="hint">see what id it has before saving…</span></button>
+        <button class="sbtn" data-cmd="save2">t2.save() <span class="hint">now save it</span></button>
+        <button class="sbtn" data-cmd="show2b">t2 <span class="hint">…and check the id again</span></button>
+      </div>
+      <div class="lesson-box" id="lessonBox">
+        Start with the <b>import</b> — the shell knows Python, but not your models until you bring them in.
+      </div>
+    </div>
+  </div>
+
+  <div class="dbwrap">
+    <div class="dbh">db.sqlite3 — asiatoursagency_tour (live view)</div>
+    <table class="dbtable" id="dbTable">
+      <thead><tr><th class="auto">id ⚡auto</th><th>origin_country</th><th>destination</th><th>number_of_nights</th><th>price</th></tr></thead>
+      <tbody id="dbBody">
+        <tr><td colspan="5" style="color:#565f89">empty table — no records yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Object state — create vs save</h2>
+  <p class="section-sub">The lesson's core insight: instantiation is not persistence.</p>
+  <table class="state-tbl">
+    <tr><th>Action</th><th>In memory?</th><th>In database?</th><th>id?</th></tr>
+    <tr><td><code>t2 = Tour(...)</code></td><td class="y">✓</td><td class="n">✗</td><td><code>None</code></td></tr>
+    <tr><td><code>t2.save()</code></td><td class="y">✓</td><td class="y">✓</td><td><b style="color:var(--green)">2</b> — assigned by Django at save time</td></tr>
+  </table>
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin-top:14px; color:#c4d0de; font-size:.9rem">
+    <code style="color:#cfe3ff">.save()</code> is analogous to the <b style="color:var(--green)">COMMIT</b> statement in MySQL — you tell the database you're happy with the changes and want them stored. Without it, the object lives only in your shell session and vanishes on exit.
+  </div>
+</section>
+
+<section>
+  <h2>Quick check</h2>
+  <p class="section-sub">Four questions — click an answer.</p>
+  <div class="quiz">
+    <div class="quiz-q">
+      <h3>1. What exactly is the Django shell?</h3>
+      <div class="opts">
+        <button class="opt">A SQL console for SQLite</button>
+        <button class="opt" data-correct="1">IPython tied to your Django application — models preloaded, direct DB access</button>
+        <button class="opt">A mini web server for testing</button>
+      </div>
+      <div class="explain"><code>python manage.py shell</code> opens IPython with your Django settings/apps loaded — letting you modify the database without much hassle.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>2. <code>t = Tour(...)</code> then <code>t</code> shows <code>id: None</code>. Why?</h3>
+      <div class="opts">
+        <button class="opt">The id field was deleted from the model</button>
+        <button class="opt" data-correct="1">The object hasn't been saved — Django assigns the id at save() time</button>
+        <button class="opt">None is a valid id in SQLite</button>
+      </div>
+      <div class="explain">Instantiation only creates the object in memory. The database — which owns the auto-increment counter — hasn't seen it, so no id exists until <code>.save()</code>.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>3. What does adding a <code>__str__</code> method to the model change?</h3>
+      <div class="opts">
+        <button class="opt">The database schema of the table</button>
+        <button class="opt" data-correct="1">The string representation shown when you display an object (and later, in the admin)</button>
+        <button class="opt">It auto-saves every new object</button>
+      </div>
+      <div class="explain">Without it you see <code>&lt;Tour: Tour object (1)&gt;</code>. <code>__str__</code> is a special Python method for a friendly display string. Note: after editing models.py you must exit and re-enter the shell.</div>
+    </div>
+    <div class="quiz-q">
+      <h3>4. Which IPython feature was demonstrated with <code>sum(range(...))</code>?</h3>
+      <div class="opts">
+        <button class="opt">Tab completion</button>
+        <button class="opt">Running SQL inline</button>
+        <button class="opt" data-correct="1">A magic function (%time) measuring a command's execution time</button>
+      </div>
+      <div class="explain"><code>%time</code> is a magic function — special commands starting with % providing enhanced features not available in standard Python.</div>
+    </div>
+  </div>
+  <p class="score" id="score"></p>
+</section>
+
+<footer>
+  Revision notes: <a href="05-adding-records.md">05-adding-records.md</a> ·
+  Based on <a href="https://www.youtube.com/watch?v=qQPKqClSDbg" target="_blank">Django Tutorial #5 — Adding Database Records</a>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var term = document.getElementById("termBody");
+  var dbBody = document.getElementById("dbBody");
+  var lesson = document.getElementById("lessonBox");
+
+  function addLine(html, cls){
+    var d = document.createElement("div");
+    d.className = "line " + (cls || "");
+    d.innerHTML = html;
+    term.appendChild(d);
+    term.scrollTop = term.scrollHeight;
+    return d;
+  }
+  var counter = 0;
+  function inNo(){ counter++; return counter; }
+
+  function prompt(cmd){
+    var n = inNo();
+    addLine('<span class="in-p">In [' + n + ']:</span> <span class="cmd-t">' + cmd + '</span>');
+    return n;
+  }
+  function out(n, html){
+    if(n) addLine('<span class="out-p">Out[' + n + ']:</span> <span class="out-t">' + html + '</span>');
+    else addLine('<span class="out-t">' + html + '</span>');
+  }
+
+  // state
+  var imported = false, hasStr = false;
+  var t1Saved = false, t2Saved = false, t1Created = false, t2Created = false;
+  var imported2 = false; // re-import after restart
+
+  function toursInDb(){
+    var rows = "";
+    if(t1Saved) rows += '<tr class="newrow"><td>1</td><td>Japan</td><td>China</td><td>10</td><td>1500</td></tr>';
+    if(t2Saved) rows += '<tr class="newrow"><td>2</td><td>Vietnam</td><td>South Korea</td><td>15</td><td>20500</td></tr>';
+    if(t1Created && !t1Saved) rows += '<tr class="pending"><td colspan="5">t1 exists in memory (id: None) — not committed yet</td></tr>';
+    if(t2Created && !t2Saved) rows += '<tr class="pending"><td colspan="5">t2 exists in memory (id: None) — not committed yet</td></tr>';
+    if(!rows) rows = '<tr><td colspan="5" style="color:#565f89">empty table — no records yet</td></tr>';
+    dbBody.innerHTML = rows;
+  }
+
+  function strRepr(t){
+    if(t === 1){
+      if(hasStr && t1Saved) return 'Tour (id: 1): from Japan to China, 10 nights costs $1500';
+      if(hasStr) return 'Tour (id: None): from Japan to China, 10 nights costs $1500';
+      return '&lt;Tour: Tour object (None)&gt;';
+    } else {
+      if(hasStr && t2Saved) return 'Tour (id: 2): from Vietnam to South Korea, 15 nights costs $20500';
+      if(hasStr) return 'Tour (id: None): from Vietnam to South Korea, 15 nights costs $20500';
+      return '&lt;Tour: Tour object (None)&gt;';
+    }
+  }
+
+  var done = {};
+  function markDone(key){
+    done[key] = true;
+    var b = document.querySelector('.sbtn[data-cmd="' + key + '"]');
+    if(b) b.disabled = true;
+  }
+
+  var actions = {
+    import: function(){
+      prompt("from asiatoursagency.models import Tour");
+      imported = true;
+      markDone("import");
+      lesson.innerHTML = "<b>Import done.</b> The Tour class is now available in the session. Next: instantiate <code>t1</code> — remember this creates an object in memory, not a row in the database.";
+    },
+    t1: function(){
+      if(!imported){ lesson.innerHTML = "Import the model first!"; return; }
+      prompt("t1 = Tour(origin_country='Japan', destination='China', number_of_nights=10, price=1500)");
+      t1Created = true; markDone("t1"); toursInDb();
+      lesson.innerHTML = "Object created in memory — <b>OOP at work</b>: Tour is the blueprint, t1 an instance. Attributes ready: <code>t1.origin_country</code> → Japan. But watch the live table: <b>nothing in the DB yet</b>. Try displaying <code>t1</code>.";
+    },
+    show1: function(){
+      if(!t1Created) return;
+      var n = prompt("t1");
+      out(n, strRepr(1));
+      if(!hasStr){
+        lesson.innerHTML = "Yuck — <code>&lt;Tour: Tour object&gt;</code> tells us nothing! The fix: define a <b>__str__ method</b> inside the Tour class. Click the next button to do it (and note the shell must restart to pick it up).";
+      } else {
+        lesson.innerHTML = hasStrMessage();
+      }
+    },
+    str: function(){
+      addLine('<span class="out-t ok">--- you edit models.py: add __str__ to Tour, then exit (Ctrl+D) and re-open: python manage.py shell ---</span>');
+      prompt("from asiatoursagency.models import Tour");
+      hasStr = true; imported2 = true; markDone("str");
+      lesson.innerHTML = "Changes to <code>models.py</code> are <b>not applied to a running session</b> — exit and re-enter the shell. Back inside: re-import Tour, recreate t1, and this time <code>t1</code> displays beautifully. (The <code>__str__</code> also gets used by the admin dashboard later.)";
+    },
+    save1: function(){
+      if(!t1Created) return;
+      if(!hasStr) {
+        var n0 = prompt("t1.save()");
+        t1Saved = true; markDone("save1"); toursInDb();
+        out(null, "— saved —");
+        lesson.innerHTML = "<code>.save()</code> = the <b>COMMIT</b> from MySQL. Row written with <b>id 1</b> — check the live table. The id was never declared: Django adds and increments it automatically at save time.";
+        return;
+      }
+      prompt("t1 = Tour(origin_country='Japan', destination='China', number_of_nights=10, price=1500)");
+      t1Created = true;
+      var n = prompt("t1.save()");
+      t1Saved = true; markDone("save1"); toursInDb();
+      out(null, "— saved —");
+      lesson.innerHTML = "<code>.save()</code> = the <b>COMMIT</b> from MySQL. Row written with <b>id 1</b> — check the live table. The id was never declared: Django adds and increments it automatically at save time. Now create <code>t2</code> — but this time, look at it <b>before</b> saving!";
+    },
+    t2: function(){
+      if(!t1Saved) return;
+      prompt("t2 = Tour(origin_country='Vietnam', destination='South Korea', number_of_nights=15, price=20500)");
+      t2Created = true; markDone("t2"); toursInDb();
+      lesson.innerHTML = "Second object in memory — the table shows it as <b>pending (id: None)</b>. This is the deliberate teaching moment: display <code>t2</code> before saving!";
+    },
+    show2: function(){
+      if(!t2Created) return;
+      var n = prompt("t2");
+      out(n, strRepr(2));
+      lesson.innerHTML = "<b>id: None!</b> Unsaved objects have no ID because the database hasn't seen them. The auto-increment counter lives in the DB — it only ticks when you <code>save()</code>.";
+    },
+    save2: function(){
+      if(!t2Created) return;
+      var n = prompt("t2.save()");
+      t2Saved = true; markDone("save2"); toursInDb();
+      out(null, "— saved —");
+      lesson.innerHTML = "Committed. Now display <code>t2</code> one more time — Django assigned <b>id 2</b> at save time. The pattern is complete: <b>create → (id is None) → save → (id assigned, row exists)</b>.";
+    },
+    show2b: function(){
+      if(!t2Saved) return;
+      var n = prompt("t2");
+      out(n, strRepr(2));
+      lesson.innerHTML = "<b>id: 2</b> — the counter ticked at save. Both tours persisted. Next lesson: rendering all records on a web page — templates and the MVT loop completed!";
+    }
+  };
+
+  function hasStrMessage(){
+    return "Much better — the <code>__str__</code> returns a formatted string: id, origin → destination, nights, and $price. Format it however you like; this one reads: <i>Tour (id: 1): from Japan to China, 10 nights costs $1500</i>.";
+  }
+
+  document.querySelectorAll(".sbtn").forEach(function(b){
+    b.addEventListener("click", function(){ actions[b.dataset.cmd](); });
+  });
+
+  // allow free typing: map common inputs
+  document.getElementById("termBody").addEventListener("click", function(){
+    lesson.innerHTML += "";
+  });
+
+  toursInDb();
+
+  // ---------- quiz ----------
+  var total = document.querySelectorAll(".quiz-q").length;
+  var answered = 0, correct = 0;
+  var scoreEl = document.getElementById("score");
+  document.querySelectorAll(".quiz-q").forEach(function(q){
+    var opts = q.querySelectorAll(".opt");
+    opts.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if(q.classList.contains("answered")) return;
+        q.classList.add("answered");
+        var isRight = btn.dataset.correct === "1";
+        btn.classList.add(isRight ? "right" : "wrong");
+        if(isRight){ correct++; }
+        else {
+          q.querySelector('.opt[data-correct="1"]').classList.add("right");
+        }
+        q.querySelector(".explain").classList.add("show");
+        answered++;
+        if(answered === total){
+          scoreEl.textContent = "You scored " + correct + " / " + total +
+            (correct === total ? " — ORM basics locked in!" : " — replay the shell simulator to review.");
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
